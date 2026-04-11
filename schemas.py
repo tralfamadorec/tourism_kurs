@@ -19,3 +19,11 @@ class AttractionResponse(AttractionBase):
     created_at: datetime
     is_active: bool
     model_config = ConfigDict(from_attributes=True)
+
+class AttractionUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=3, max_length=255)
+    description: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    photo_url: Optional[str] = None
