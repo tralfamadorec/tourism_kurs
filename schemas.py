@@ -47,3 +47,27 @@ class UserResponse(BaseModel):
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+class AccommodationBase(BaseModel):
+    name: str = Field(..., min_length=3, max_length=255)
+    description: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=20)
+    website: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    rating: Optional[float] = Field(None, ge=0, le=5)
+    price_per_night: Optional[int] = Field(None, ge=0)
+    photo_url: Optional[str] = None
+
+class AccommodationCreate(AccommodationBase): pass
+
+class AccommodationUpdate(AccommodationBase):
+    name: Optional[str] = Field(None, min_length=3, max_length=255)
+
+class AccommodationResponse(AccommodationBase):
+    id: int
+    created_by: Optional[int] = None
+    created_at: datetime
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)

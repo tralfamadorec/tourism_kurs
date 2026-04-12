@@ -1,11 +1,12 @@
 import asyncio
 from database import async_session_maker
-from models import User, Attraction
+from models import User, Attraction, Accommodation
 from security import get_password_hash
 from sqlalchemy import select
 
 async def seed_db():
     async with async_session_maker() as session:
+        # администратор
         result = await session.execute(select(User).where(User.username == "admin"))
         admin = result.scalar_one_or_none()
         
@@ -23,6 +24,7 @@ async def seed_db():
         else:
             print(f"Администратор {admin.username} уже существует (id={admin.id})")
         
+        # достопримечательность
         result = await session.execute(select(Attraction).where(Attraction.name == "Ачинский краеведческий музей"))
         if not result.scalar_one_or_none():
             museum = Attraction(
@@ -40,6 +42,23 @@ async def seed_db():
             print(f"Создана достопримечательность: {museum.name} (id={museum.id})")
         else:
             print("Достопримечательность 'Ачинский краеведческий музей' уже существует")
+
+        # гостиницы
+        accommodations_data = [
+            {"name": "Отель Ачинск", "description": "Уютный отель в центре города", "address": "пр. Ленина, 10", "phone": "+71234567890", "rating": 4.5, "price_per_night": 3500},
+            {"name": "Мини-гостиница Сибирь", "description": "Экономичный вариант для туристов", "address": "ул. Шоссейная, 5", "phone": "+71234567891", "rating": 3.8, "price_per_night": 1800},
+        ]
+
+        for acc_data in accommodations_data:
+            result = await session.execute(select(Accommodation).where(Accommodation.name == acc_data["name"]))
+            if not result.scalar_one_or_none():
+                acc = Accommodation(**acc_data, created_by=admin.id)
+                session.add(acc)
+                await session.commit()
+                await session.refresh(acc)
+                print(f"Создана гостиница: {acc.name} (id={acc.id})")
+            else:
+                print(f"Гостиница '{acc_data['name']}' уже существует")
 
 if __name__ == "__main__":
     asyncio.run(seed_db())
