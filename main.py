@@ -154,6 +154,31 @@ def admin_food_edit(request: Request, item_id: int):
         "item_id": item_id
     })
 
+# события
+@app.get("/admin/events")
+def admin_events_list(request: Request):
+    return templates.TemplateResponse(request, "admin/events_list.html", {"request": request})
+
+@app.get("/admin/events/new")
+def admin_events_new(request: Request):
+    return templates.TemplateResponse(request, "admin/events_form.html", {
+        "request": request,
+        "title": "Новое событие",
+        "back_url": "/admin/events",
+        "is_edit": False,
+        "item_id": None
+    })
+
+@app.get("/admin/events/{item_id}/edit")
+def admin_events_edit(request: Request, item_id: int):
+    return templates.TemplateResponse(request, "admin/events_form.html", {
+        "request": request,
+        "title": "Редактировать событие",
+        "back_url": "/admin/events",
+        "is_edit": True,
+        "item_id": item_id
+    })
+
 # заглушки для остальных страниц 
 @app.get("/attractions")
 def attractions_page(request: Request): return templates.TemplateResponse(request, "attractions.html", {"request": request})
