@@ -23,19 +23,31 @@ function isAuthenticated() {
 function updateAuthUI() {
     const authBtn = document.getElementById('authBtn');
     const userStatus = document.getElementById('userStatus');
+    const adminBtn = document.getElementById('adminBtn');
     
+    console.log('updateAuthUI вызван. adminBtn найден:', !!adminBtn);
+
     if (isAuthenticated()) {
         authBtn.textContent = 'Выход';
         authBtn.href = '#';
         authBtn.onclick = (e) => { e.preventDefault(); logout(); };
         userStatus.textContent = 'Вы вошли как администратор';
+        
+        if (adminBtn) adminBtn.classList.remove('d-none');
+        console.log('Кнопка админки должна быть видна');
     } else {
         authBtn.textContent = 'Вход';
         authBtn.href = '/login';
         authBtn.onclick = null;
         userStatus.textContent = '';
+        
+        if (adminBtn) adminBtn.classList.add('d-none');
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateAuthUI();
+});
 
 // вход/выход
 async function login(username, password) {

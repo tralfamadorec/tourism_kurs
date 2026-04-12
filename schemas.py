@@ -196,6 +196,15 @@ class PostcardTemplateBase(BaseModel):
     image_url: str
     description: Optional[str] = None
 
+class PostcardTemplateCreate(PostcardTemplateBase):
+    pass
+
+class PostcardTemplateUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=2, max_length=255)
+    image_url: Optional[str] = None
+    description: Optional[str] = None
+
 class PostcardTemplateResponse(PostcardTemplateBase):
     id: int
+    is_active: bool = True
     model_config = ConfigDict(from_attributes=True)

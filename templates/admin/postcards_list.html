@@ -1,0 +1,61 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Управление шаблонами открыток{% endblock %}
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Шаблоны открыток</h2>
+    <a href="/admin/postcards/new" class="btn btn-primary">➕ Добавить шаблон</a>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Название</th>
+                        <th>Изображение</th>
+                        <th class="text-end">Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="postcardsTable">
+                    <tr><td colspan="3" class="text-center py-4">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script>
+async function loadPostcards() {
+    const tbody = document.getElementById('postcardsTable');
+    try {
+        const data = await apiRequest('/api/postcards/?limit=100');
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4">Нет шаблонов</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td><strong>${item.title}</strong><br><small class="text-muted">${item.description || ''}</small></td>
+                <td><code>${item.image_url}</code></td>
+                <td class="text-end">
+                    <a href="/admin/postcards/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deletePostcard(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">Ошибка: ${err.message}</td></tr>`;
+    }
+}
+async function deletePostcard(id) {
+    if (!confirm('Удалить этот шаблон?')) return;
+    try {
+        await apiRequest(`/api/postcards/${id}`, { method: 'DELETE' });
+        loadPostcards();
+    } catch (err) { alert('Ошибка: ' + err.message); }
+}
+document.addEventListener('DOMContentLoaded', loadPostcards);
+</script>
+{% endblock %}

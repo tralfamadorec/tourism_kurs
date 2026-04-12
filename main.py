@@ -229,6 +229,31 @@ def admin_safety_edit(request: Request, item_id: int):
         "item_id": item_id
     })
 
+# открытки
+@app.get("/admin/postcards")
+def admin_postcards_list(request: Request):
+    return templates.TemplateResponse(request, "admin/postcards_list.html", {"request": request})
+
+@app.get("/admin/postcards/new")
+def admin_postcards_new(request: Request):
+    return templates.TemplateResponse(request, "admin/postcards_form.html", {
+        "request": request,
+        "title": "Новый шаблон открытки",
+        "back_url": "/admin/postcards",
+        "is_edit": False,
+        "item_id": None
+    })
+
+@app.get("/admin/postcards/{item_id}/edit")
+def admin_postcards_edit(request: Request, item_id: int):
+    return templates.TemplateResponse(request, "admin/postcards_form.html", {
+        "request": request,
+        "title": "Редактировать шаблон",
+        "back_url": "/admin/postcards",
+        "is_edit": True,
+        "item_id": item_id
+    })
+
 # заглушки для остальных страниц 
 @app.get("/attractions")
 def attractions_page(request: Request): return templates.TemplateResponse(request, "attractions.html", {"request": request})
