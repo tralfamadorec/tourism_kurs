@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from routes import attractions
 from routes import auth
 from routes import accomodations
+from routes import events
 
 app = FastAPI(
     title="Ачинск туристический",
@@ -12,6 +13,7 @@ app = FastAPI(
 app.include_router(attractions.router)
 app.include_router(auth.router)
 app.include_router(accomodations.router)
+app.include_router(events.router)
 
 @app.get("/")
 def root():

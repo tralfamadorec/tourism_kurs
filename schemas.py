@@ -71,3 +71,23 @@ class AccommodationResponse(AccommodationBase):
     created_at: datetime
     is_active: bool
     model_config = ConfigDict(from_attributes=True)
+
+class EventBase(BaseModel):
+    title: str = Field(..., min_length=3, max_length=255)
+    description: Optional[str] = None
+    event_date: datetime
+    location: Optional[str] = None
+    photo_url: Optional[str] = None
+
+class EventCreate(EventBase): pass
+
+class EventUpdate(EventBase):
+    title: Optional[str] = Field(None, min_length=3, max_length=255)
+    event_date: Optional[datetime] = None
+
+class EventResponse(EventBase):
+    id: int
+    created_by: Optional[int] = None
+    created_at: datetime
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)
