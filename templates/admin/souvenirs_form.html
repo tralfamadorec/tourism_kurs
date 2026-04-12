@@ -1,0 +1,124 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ 'Редактировать' if is_edit else 'Новый' }} сувенир{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ title }}</h2>
+    <a href="/admin/souvenirs" class="btn btn-outline-secondary">← Назад к списку</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form id="souvenirForm">
+            <div class="mb-3">
+                <label for="name" class="form-label">Название сувенира *</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="producer" class="form-label">Производитель</label>
+                    <input type="text" class="form-control" id="producer" name="producer">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="price" class="form-label">Цена (₽)</label>
+                    <input type="number" min="0" class="form-control" id="price" name="price">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">Описание / Место продажи</label>
+                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Краткое описание и где можно приобрести"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="photo_url" class="form-label">Ссылка на фото</label>
+                <input type="url" class="form-control" id="photo_url" name="photo_url" placeholder="/static/images/...">
+            </div>
+
+            <div id="formError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                <a href="/admin/souvenirs" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('souvenirForm');
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const itemId = {{ item_id if is_edit else 'null' }};
+
+if (isEdit && itemId) {
+    loadSouvenirData(itemId);
+}
+
+async function loadSouvenirData(id) {
+    try {
+        const data = await apiRequest(`/api/souvenirs/${id}`);
+        
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('producer').value = data.producer || '';
+        document.getElementById('price').value = data.price || '';
+        document.getElementById('description').value = data.description || '';
+        document.getElementById('photo_url').value = data.photo_url || '';
+        
+    } catch (err) {
+        document.getElementById('formError').textContent = 'Ошибка загрузки данных: ' + err.message;
+        document.getElementById('formError').classList.remove('d-none');
+    }
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+
+    const data = {};
+    new FormData(form).forEach((value, key) => {
+        if (value) data[key] = value;
+    });
+    
+    if (data.price) data.price = parseInt(data.price);
+
+    try {
+        let response;
+        if (isEdit) {
+            response = await fetch(`/api/souvenirs/${itemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+                body: JSON.stringify(data)
+            });
+        } else {
+            response = await fetch('/api/souvenirs/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+                body: JSON.stringify(data)
+            });
+        }
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Ошибка сохранения');
+        }
+
+        successDiv.classList.remove('d-none');
+        setTimeout(() => { window.location.href = '/admin/souvenirs'; }, 1500);
+
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Управление сувенирами{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Сувенирная продукция</h2>
+    <a href="/admin/souvenirs/new" class="btn btn-primary">➕ Добавить сувенир</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Название</th>
+                        <th>Производитель</th>
+                        <th>Цена</th>
+                        <th class="text-end">Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="souvenirsTable">
+                    <tr><td colspan="4" class="text-center py-4">Загрузка данных...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+async function loadSouvenirs() {
+    const tbody = document.getElementById('souvenirsTable');
+    try {
+        const data = await apiRequest('/api/souvenirs/?limit=100');
+        
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4">Нет товаров в каталоге</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td><strong>${item.name}</strong><br><small class="text-muted">${item.description?.substring(0, 40) || ''}...</small></td>
+                <td>${item.producer || '—'}</td>
+                <td>${item.price ? item.price + ' ₽' : '—'}</td>
+                <td class="text-end">
+                    <a href="/admin/souvenirs/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deleteSouvenir(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">Ошибка загрузки: ${err.message}</td></tr>`;
+    }
+}
+
+async function deleteSouvenir(id) {
+    if (!confirm('Удалить эту позицию сувениров?')) return;
+    try {
+        await apiRequest(`/api/souvenirs/${id}`, { method: 'DELETE' });
+        loadSouvenirs();
+    } catch (err) {
+        alert('Ошибка удаления: ' + err.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadSouvenirs);
+</script>
+{% endblock %}
