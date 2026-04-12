@@ -1,0 +1,75 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Управление достопримечательностями{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Достопримечательности</h2>
+    <a href="/admin/attractions/new" class="btn btn-primary">➕ Добавить</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Адрес</th>
+                    <th class="text-end">Действия</th>
+                </tr>
+            </thead>
+            <tbody id="attractionsTable">
+                <!-- Загружается через JS -->
+                <tr>
+                    <td colspan="3" class="text-center py-4">Загрузка...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+async function loadAttractionsAdmin() {
+    const tbody = document.getElementById('attractionsTable');
+    
+    try {
+        const data = await apiRequest('/api/attractions/?limit=100');
+        
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4">Нет записей</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.address || '—'}</td>
+                <td class="text-end">
+                    <a href="/admin/attractions/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deleteAttraction(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+        
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">Ошибка: ${err.message}</td></tr>`;
+    }
+}
+
+async function deleteAttraction(id) {
+    if (!confirm('Удалить эту достопримечательность?')) return;
+    
+    try {
+        await apiRequest(`/api/attractions/${id}`, { method: 'DELETE' });
+        loadAttractionsAdmin(); // Перезагрузить список
+    } catch (err) {
+        alert('Ошибка удаления: ' + err.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadAttractionsAdmin);
+</script>
+{% endblock %}

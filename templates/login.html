@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Вход | Ачинск туристический{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">Вход для сотрудников ТИЦ</h3>
+                
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+                    <button type="submit" class="btn btn-primary w-100">Войти</button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">Доступ только для авторизованных сотрудников</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('loginError');
+    
+    errorDiv.classList.add('d-none');
+    
+    const result = await login(username, password);
+    
+    if (result.success) {
+        window.location.href = '/';
+    } else {
+        errorDiv.textContent = result.error;
+        errorDiv.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}

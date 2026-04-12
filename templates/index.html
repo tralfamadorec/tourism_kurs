@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Главная | Ачинск туристический{% endblock %}
+
+{% block content %}
+<!-- Hero секция -->
+<section class="text-center py-5 bg-light rounded mb-4">
+    <h1 class="display-5 fw-bold">Добро пожаловать в Ачинск</h1>
+    <p class="lead text-muted">Интерактивный путеводитель по городу с богатым историко-культурным наследием</p>
+    <a href="/routes" class="btn btn-primary btn-lg mt-3">Смотреть маршруты</a>
+</section>
+
+<!-- Категории -->
+<div class="row g-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">🏛️ Достопримечательности</h5>
+                <p class="card-text small text-muted">50 объектов культурного наследия</p>
+                <a href="/attractions" class="btn btn-outline-primary btn-sm w-100">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">🗺️ Маршруты</h5>
+                <p class="card-text small text-muted">7 официальных туров</p>
+                <a href="/routes" class="btn btn-outline-primary btn-sm w-100">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">🏨 Гостиницы</h5>
+                <p class="card-text small text-muted">11 средств размещения</p>
+                <a href="/hotels" class="btn btn-outline-primary btn-sm w-100">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">🍽️ Где вкусно?</h5>
+                <p class="card-text small text-muted">31 предприятие питания</p>
+                <a href="/food" class="btn btn-outline-primary btn-sm w-100">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">🎉 События</h5>
+                <p class="card-text small text-muted">Афиша мероприятий</p>
+                <a href="/events" class="btn btn-outline-primary btn-sm w-100">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">🛡️ Безопасность</h5>
+                <p class="card-text small text-muted">Справочник служб</p>
+                <a href="/safety" class="btn btn-outline-primary btn-sm w-100">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">🎁 Сувениры</h5>
+                <p class="card-text small text-muted">Продукция и производители</p>
+                <a href="/souvenirs" class="btn btn-outline-primary btn-sm w-100">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="card-title">💌 Открытка</h5>
+                <p class="card-text small text-muted">Отправить цифровой привет</p>
+                <a href="/postcards" class="btn btn-outline-primary btn-sm w-100">Создать</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

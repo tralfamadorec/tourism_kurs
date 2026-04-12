@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from typing import List, Optional, Generic, TypeVar
 from datetime import datetime
+
+T = TypeVar('T')
 
 class AttractionBase(BaseModel):
     name: str = Field(..., min_length=3, max_length=255, description="Название достопримечательности")
