@@ -1,0 +1,158 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ 'Редактировать' if is_edit else 'Новая' }} гостиница{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ title }}</h2>
+    <a href="/admin/hotels" class="btn btn-outline-secondary">← Назад к списку</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form id="hotelForm">
+            <div class="mb-3">
+                <label for="name" class="form-label">Название гостиницы *</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">Описание</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="address" class="form-label">Адрес</label>
+                    <input type="text" class="form-control" id="address" name="address">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="phone" class="form-label">Телефон</label>
+                    <input type="tel" class="form-control" id="phone" name="phone">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="rating" class="form-label">Рейтинг (1-5)</label>
+                    <input type="number" step="0.1" min="1" max="5" class="form-control" id="rating" name="rating">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="price_per_night" class="form-label">Цена за ночь (₽)</label>
+                    <input type="number" class="form-control" id="price_per_night" name="price_per_night">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="website" class="form-label">Сайт</label>
+                    <input type="url" class="form-control" id="website" name="website">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="latitude" class="form-label">Широта</label>
+                    <input type="number" step="any" class="form-control" id="latitude" name="latitude">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="longitude" class="form-label">Долгота</label>
+                    <input type="number" step="any" class="form-control" id="longitude" name="longitude">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="photo_url" class="form-label">Ссылка на фото</label>
+                <input type="url" class="form-control" id="photo_url" name="photo_url" placeholder="/static/images/...">
+            </div>
+
+            <div id="formError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                <a href="/admin/hotels" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('hotelForm');
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const itemId = {{ item_id if is_edit else 'null' }};
+
+if (isEdit && itemId) {
+    loadHotelData(itemId);
+}
+
+async function loadHotelData(id) {
+    try {
+        const data = await apiRequest(`/api/accommodations/${id}`);
+        
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('description').value = data.description || '';
+        document.getElementById('address').value = data.address || '';
+        document.getElementById('phone').value = data.phone || '';
+        document.getElementById('rating').value = data.rating || '';
+        document.getElementById('price_per_night').value = data.price_per_night || '';
+        document.getElementById('website').value = data.website || '';
+        document.getElementById('latitude').value = data.latitude || '';
+        document.getElementById('longitude').value = data.longitude || '';
+        document.getElementById('photo_url').value = data.photo_url || '';
+        
+    } catch (err) {
+        document.getElementById('formError').textContent = 'Ошибка загрузки данных: ' + err.message;
+        document.getElementById('formError').classList.remove('d-none');
+    }
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+
+    const data = {};
+    new FormData(form).forEach((value, key) => {
+        if (value) data[key] = value;
+    });
+    
+    if (data.rating) data.rating = parseFloat(data.rating);
+    if (data.price_per_night) data.price_per_night = parseInt(data.price_per_night);
+    if (data.latitude) data.latitude = parseFloat(data.latitude);
+    if (data.longitude) data.longitude = parseFloat(data.longitude);
+
+    try {
+        let response;
+        if (isEdit) {
+            response = await fetch(`/api/accommodations/${itemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+                body: JSON.stringify(data)
+            });
+        } else {
+            response = await fetch('/api/accommodations/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+                body: JSON.stringify(data)
+            });
+        }
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Ошибка сохранения');
+        }
+
+        successDiv.classList.remove('d-none');
+        setTimeout(() => { window.location.href = '/admin/hotels'; }, 1500);
+
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}

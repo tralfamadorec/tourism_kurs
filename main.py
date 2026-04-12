@@ -104,6 +104,31 @@ def admin_routes_edit(request: Request, item_id: int):
         "item_id": item_id  # ← передаем ID в шаблон
     })
 
+# гостиницы
+@app.get("/admin/hotels")
+def admin_hotels_list(request: Request):
+    return templates.TemplateResponse(request, "admin/hotels_list.html", {"request": request})
+
+@app.get("/admin/hotels/new")
+def admin_hotels_new(request: Request):
+    return templates.TemplateResponse(request, "admin/hotels_form.html", {
+        "request": request,
+        "title": "Новая гостиница",
+        "back_url": "/admin/hotels",
+        "is_edit": False,
+        "item_id": None
+    })
+
+@app.get("/admin/hotels/{item_id}/edit")
+def admin_hotels_edit(request: Request, item_id: int):
+    return templates.TemplateResponse(request, "admin/hotels_form.html", {
+        "request": request,
+        "title": "Редактировать гостиницу",
+        "back_url": "/admin/hotels",
+        "is_edit": True,
+        "item_id": item_id
+    })
+
 # заглушки для остальных страниц 
 @app.get("/attractions")
 def attractions_page(request: Request): return templates.TemplateResponse(request, "attractions.html", {"request": request})

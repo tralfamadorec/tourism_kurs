@@ -36,7 +36,6 @@
 async function loadRoutes() {
     const tbody = document.getElementById('routesTable');
     try {
-        // Запрашиваем маршруты с API
         const data = await apiRequest('/api/routes/?limit=100');
         
         if (data.length === 0) {

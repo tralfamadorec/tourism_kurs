@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="row">
-    <!-- Боковое меню -->
     <div class="col-md-3 col-lg-2 mb-4">
         <div class="list-group">
             <a href="/admin" class="list-group-item list-group-item-action active">📊 Панель управления</a>
@@ -20,7 +19,6 @@
         </div>
     </div>
     
-    <!-- Основной контент админки -->
     <div class="col-md-9 col-lg-10">
         {% block admin_content %}{% endblock %}
     </div>
@@ -30,7 +28,6 @@
 {% block scripts %}
 {{ super() }}
 <script>
-// Проверка авторизации для админ-страниц
 document.addEventListener('DOMContentLoaded', () => {
     if (!isAuthenticated()) {
         window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);

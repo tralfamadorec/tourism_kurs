@@ -78,7 +78,6 @@ async function loadRouteData(id) {
     try {
         const data = await apiRequest(`/api/routes/${id}`);
         
-        // Заполняем поля
         document.getElementById('title').value = data.title || '';
         document.getElementById('description').value = data.description || '';
         document.getElementById('duration_hours').value = data.duration_hours || '';
