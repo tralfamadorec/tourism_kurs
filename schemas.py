@@ -96,7 +96,7 @@ class EventResponse(EventBase):
     is_active: bool
     model_config = ConfigDict(from_attributes=True)
 
-class RestaurantBase(BaseModel):
+class FoodBase(BaseModel):
     name: str = Field(..., min_length=3, max_length=255)
     description: Optional[str] = None
     address: Optional[str] = None
@@ -107,13 +107,13 @@ class RestaurantBase(BaseModel):
     rating: Optional[float] = Field(None, ge=0, le=5)
     photo_url: Optional[str] = None
 
-class RestaurantCreate(RestaurantBase): 
+class FoodCreate(FoodBase): 
     pass
 
-class RestaurantUpdate(RestaurantBase):
+class FoodUpdate(FoodBase):
     name: Optional[str] = Field(None, min_length=3, max_length=255)
 
-class RestaurantResponse(RestaurantBase):
+class FoodResponse(FoodBase):
     id: int
     created_by: Optional[int] = None
     created_at: datetime

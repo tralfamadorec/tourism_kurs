@@ -6,7 +6,7 @@ import os
 import httpx
 from fastapi import HTTPException
 
-from routes import attractions, auth, accommodations, events, restaurants, souvenirs, safety, postcards
+from routes import attractions, auth, accommodations, events, foods, souvenirs, safety, postcards
 from routes import routes as routes_router
 
 app = FastAPI(
@@ -33,7 +33,7 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(attractions.router)
 app.include_router(accommodations.router)
 app.include_router(events.router)
-app.include_router(restaurants.router)
+app.include_router(foods.router)
 app.include_router(routes_router.router)
 app.include_router(souvenirs.router)
 app.include_router(safety.router)
@@ -130,26 +130,26 @@ def admin_hotels_edit(request: Request, item_id: int):
     })
 
 # рестораны
-@app.get("/admin/restaurants")
+@app.get("/admin/food")
 def admin_food_list(request: Request):
-    return templates.TemplateResponse(request, "admin/restaurants_list.html", {"request": request})
+    return templates.TemplateResponse(request, "admin/foods_list.html", {"request": request})
 
-@app.get("/admin/restaurants/new")
+@app.get("/admin/food/new")
 def admin_food_new(request: Request):
-    return templates.TemplateResponse(request, "admin/restaurants_form.html", {
+    return templates.TemplateResponse(request, "admin/foods_form.html", {
         "request": request,
         "title": "Новое заведение",
-        "back_url": "/admin/restaurants",
+        "back_url": "/admin/food",
         "is_edit": False,
         "item_id": None
     })
 
-@app.get("/admin/restaurants/{item_id}/edit")
+@app.get("/admin/food/{item_id}/edit")
 def admin_food_edit(request: Request, item_id: int):
-    return templates.TemplateResponse(request, "admin/restaurants_form.html", {
+    return templates.TemplateResponse(request, "admin/foods_form.html", {
         "request": request,
         "title": "Редактировать заведение",
-        "back_url": "/admin/restaurants",
+        "back_url": "/admin/food",
         "is_edit": True,
         "item_id": item_id
     })
@@ -253,6 +253,11 @@ def admin_postcards_edit(request: Request, item_id: int):
         "is_edit": True,
         "item_id": item_id
     })
+
+# публичная часть
+@app.get("/food")
+def food_page(request: Request):
+    return templates.TemplateResponse(request, "food.html", {"request": request})
 
 # заглушки для остальных страниц 
 @app.get("/attractions")

@@ -59,8 +59,8 @@ class Event(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True) 
 
-class Restaurant(Base):
-    __tablename__ = "restaurants"
+class Food(Base):
+    __tablename__ = "foods"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)

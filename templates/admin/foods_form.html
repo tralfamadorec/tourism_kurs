@@ -4,11 +4,11 @@
 {% block admin_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>{{ title }}</h2>
-    <a href="/admin/restaurants" class="btn btn-outline-secondary">← Назад</a>
+    <a href="/admin/foods" class="btn btn-outline-secondary">← Назад</a>
 </div>
 <div class="card">
     <div class="card-body">
-        <form id="restaurantForm">
+        <form id="foodForm">
             <div class="mb-3">
                 <label for="name" class="form-label">Название *</label>
                 <input type="text" class="form-control" id="name" name="name" required>
@@ -59,7 +59,7 @@
             <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">💾 Сохранить</button>
-                <a href="/admin/restaurants" class="btn btn-outline-secondary">Отмена</a>
+                <a href="/admin/foods" class="btn btn-outline-secondary">Отмена</a>
             </div>
         </form>
     </div>
@@ -69,15 +69,15 @@
 {% block scripts %}
 {{ super() }}
 <script>
-const form = document.getElementById('restaurantForm');
+const form = document.getElementById('foodForm');
 const isEdit = {{ 'true' if is_edit else 'false' }};
 const itemId = {{ item_id if is_edit else 'null' }};
 
-if (isEdit && itemId) loadRestaurantData(itemId);
+if (isEdit && itemId) loadFoodData(itemId);
 
-async function loadRestaurantData(id) {
+async function loadFoodData(id) {
     try {
-        const data = await apiRequest(`/api/restaurants/${id}`);
+        const data = await apiRequest(`/api/foods/${id}`);
         document.getElementById('name').value = data.name || '';
         document.getElementById('description').value = data.description || '';
         document.getElementById('address').value = data.address || '';
@@ -108,7 +108,7 @@ form.addEventListener('submit', async (e) => {
     if (data.longitude) data.longitude = parseFloat(data.longitude);
 
     try {
-        const url = isEdit ? `/api/restaurants/${itemId}` : '/api/restaurants/';
+        const url = isEdit ? `/api/foods/${itemId}` : '/api/foods/';
         const method = isEdit ? 'PUT' : 'POST';
         const response = await fetch(url, {
             method,
@@ -120,7 +120,7 @@ form.addEventListener('submit', async (e) => {
             throw new Error(err.detail || 'Ошибка сохранения');
         }
         successDiv.classList.remove('d-none');
-        setTimeout(() => { window.location.href = '/admin/restaurants'; }, 1500);
+        setTimeout(() => { window.location.href = '/admin/foods'; }, 1500);
     } catch (err) {
         errorDiv.textContent = err.message;
         errorDiv.classList.remove('d-none');

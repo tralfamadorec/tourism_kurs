@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Где вкусно поесть | Ачинск туристический{% endblock %}
+
+{% block content %}
+<div class="text-center py-5 bg-primary text-white rounded mb-4">
+    <h1 class="display-4 fw-bold">🍽️ Гастрономический путеводитель</h1>
+    <p class="lead">Лучшие рестораны, кафе и закусочные Ачинска</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Населенный пункт</label>
+                        <select id="locationFilter" class="form-select form-select-sm">
+                            <option value="">Все города</option>
+                            <option value="Ачинск">Ачинск</option>
+                            <option value="Деревня">Деревня</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Тип кухни</label>
+                        <select id="cuisineFilter" class="form-select form-select-sm">
+                            <option value="">Любая кухня</option>
+                            <option value="Русская">Русская</option>
+                            <option value="Итальянская">Итальянская</option>
+                            <option value="Азиатская">Азиатская</option>
+                            <option value="Европейская">Европейская</option>
+                            <option value="Кавказская">Кавказская</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Доступность</label>
+                        <select id="accessibilityFilter" class="form-select form-select-sm">
+                            <option value="">Любая</option>
+                            <option value="accessible">Доступно для МГН</option>
+                            <option value="parking">Есть парковка</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Сортировка</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="popularity">По популярности</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="price">По цене</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="name">По алфавиту</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="foodsList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка заведений...</p>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4">
+    <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
+        Показать еще
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+let currentSort = 'popularity';
+let filters = {
+    location: '',
+    cuisine: '',
+    accessibility: ''
+};
+
+async function loadFoods(append = false) {
+    const listEl = document.getElementById('foodsList');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (!append) {
+        listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+    }
+    
+    try {
+        const params = new URLSearchParams({
+            limit: 6,
+            skip: (currentPage - 1) * 6
+        });
+        
+        if (filters.cuisine) params.append('cuisine', filters.cuisine);
+        if (filters.location) params.append('location', filters.location);
+        
+        switch(currentSort) {
+            case 'price': params.append('sort', 'avg_price'); break;
+            case 'name': params.append('sort', 'name'); break;
+            case 'popularity': params.append('sort', 'rating'); break;
+        }
+        
+        const response = await fetch(`/api/foods/?${params}`);
+        const data = await response.json();
+        
+        if (!append) listEl.innerHTML = '';
+        
+        if (data.length === 0 && currentPage === 1) {
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">По вашему запросу ничего не найдено</p></div>';
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        if (data.length === 0) {
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        data.forEach(item => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            
+            const stars = '⭐'.repeat(Math.round(item.rating || 0));
+            const accessibilityBadge = item.is_accessible ? '<span class="badge bg-success me-2">♿ Доступно</span>' : '';
+            
+            col.innerHTML = `
+                <div class="card h-100 shadow-sm hover-shadow">
+                    ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 220px; object-fit: cover;">` : ''}
+                    <div class="card-body">
+                        <div class="mb-2">
+                            ${accessibilityBadge}
+                            <span class="badge bg-secondary">${item.cuisine || 'Универсальная'}</span>
+                        </div>
+                        <h5 class="card-title">${item.name}</h5>
+                        <p class="card-text text-muted small mb-2">${item.address || ''}</p>
+                        <p class="card-text">${item.description?.substring(0, 120)}${item.description?.length > 120 ? '...' : ''}</p>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Рейтинг:</span>
+                            <span class="text-warning">${stars || '—'}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Средний чек:</span>
+                            <span class="fw-bold">${item.avg_price ? item.avg_price + ' ₽' : '—'}</span>
+                        </li>
+                    </ul>
+                    <div class="card-body">
+                        <a href="/food/${item.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
+                    </div>
+                </div>
+            `;
+            listEl.appendChild(col);
+        });
+        
+        if (data.length === 6) {
+            loadMoreBtn.classList.remove('d-none');
+        } else {
+            loadMoreBtn.classList.add('d-none');
+        }
+        
+    } catch (err) {
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+    }
+}
+
+// обработчики фильтров
+document.getElementById('locationFilter').addEventListener('change', (e) => {
+    filters.location = e.target.value;
+    currentPage = 1;
+    loadFoods();
+});
+
+document.getElementById('cuisineFilter').addEventListener('change', (e) => {
+    filters.cuisine = e.target.value;
+    currentPage = 1;
+    loadFoods();
+});
+
+document.getElementById('accessibilityFilter').addEventListener('change', (e) => {
+    filters.accessibility = e.target.value;
+    currentPage = 1;
+    loadFoods();
+});
+
+// обработчики сортировки
+document.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentSort = e.target.dataset.sort;
+        currentPage = 1;
+        loadFoods();
+    });
+});
+
+// показать еще
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    currentPage++;
+    loadFoods(true);  // true = добавить к существующим
+});
+
+// инициализация
+document.addEventListener('DOMContentLoaded', () => loadFoods());
+</script>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}
