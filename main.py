@@ -129,6 +129,31 @@ def admin_hotels_edit(request: Request, item_id: int):
         "item_id": item_id
     })
 
+# рестораны
+@app.get("/admin/restaurants")
+def admin_food_list(request: Request):
+    return templates.TemplateResponse(request, "admin/restaurants_list.html", {"request": request})
+
+@app.get("/admin/restaurants/new")
+def admin_food_new(request: Request):
+    return templates.TemplateResponse(request, "admin/restaurants_form.html", {
+        "request": request,
+        "title": "Новое заведение",
+        "back_url": "/admin/restaurants",
+        "is_edit": False,
+        "item_id": None
+    })
+
+@app.get("/admin/restaurants/{item_id}/edit")
+def admin_food_edit(request: Request, item_id: int):
+    return templates.TemplateResponse(request, "admin/restaurants_form.html", {
+        "request": request,
+        "title": "Редактировать заведение",
+        "back_url": "/admin/restaurants",
+        "is_edit": True,
+        "item_id": item_id
+    })
+
 # заглушки для остальных страниц 
 @app.get("/attractions")
 def attractions_page(request: Request): return templates.TemplateResponse(request, "attractions.html", {"request": request})

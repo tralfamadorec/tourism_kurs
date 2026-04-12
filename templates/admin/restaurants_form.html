@@ -1,0 +1,130 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}{{ 'Редактировать' if is_edit else 'Новое' }} заведение{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ title }}</h2>
+    <a href="/admin/restaurants" class="btn btn-outline-secondary">← Назад</a>
+</div>
+<div class="card">
+    <div class="card-body">
+        <form id="restaurantForm">
+            <div class="mb-3">
+                <label for="name" class="form-label">Название *</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Описание</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="address" class="form-label">Адрес</label>
+                    <input type="text" class="form-control" id="address" name="address">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="phone" class="form-label">Телефон</label>
+                    <input type="tel" class="form-control" id="phone" name="phone">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="cuisine" class="form-label">Тип кухни</label>
+                    <input type="text" class="form-control" id="cuisine" name="cuisine" placeholder="Русская, Итальянская...">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="avg_price" class="form-label">Средний чек (₽)</label>
+                    <input type="number" class="form-control" id="avg_price" name="avg_price">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="rating" class="form-label">Рейтинг (1-5)</label>
+                    <input type="number" step="0.1" min="1" max="5" class="form-control" id="rating" name="rating">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="latitude" class="form-label">Широта</label>
+                    <input type="number" step="any" class="form-control" id="latitude" name="latitude">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="longitude" class="form-label">Долгота</label>
+                    <input type="number" step="any" class="form-control" id="longitude" name="longitude">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="photo_url" class="form-label">Ссылка на фото</label>
+                <input type="url" class="form-control" id="photo_url" name="photo_url">
+            </div>
+            <div id="formError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                <a href="/admin/restaurants" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('restaurantForm');
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const itemId = {{ item_id if is_edit else 'null' }};
+
+if (isEdit && itemId) loadRestaurantData(itemId);
+
+async function loadRestaurantData(id) {
+    try {
+        const data = await apiRequest(`/api/restaurants/${id}`);
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('description').value = data.description || '';
+        document.getElementById('address').value = data.address || '';
+        document.getElementById('phone').value = data.phone || '';
+        document.getElementById('cuisine').value = data.cuisine || '';
+        document.getElementById('avg_price').value = data.avg_price || '';
+        document.getElementById('rating').value = data.rating || '';
+        document.getElementById('latitude').value = data.latitude || '';
+        document.getElementById('longitude').value = data.longitude || '';
+        document.getElementById('photo_url').value = data.photo_url || '';
+    } catch (err) {
+        document.getElementById('formError').textContent = 'Ошибка загрузки: ' + err.message;
+        document.getElementById('formError').classList.remove('d-none');
+    }
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    errorDiv.classList.add('d-none'); successDiv.classList.add('d-none');
+
+    const data = {};
+    new FormData(form).forEach((value, key) => { if (value) data[key] = value; });
+    if (data.avg_price) data.avg_price = parseInt(data.avg_price);
+    if (data.rating) data.rating = parseFloat(data.rating);
+    if (data.latitude) data.latitude = parseFloat(data.latitude);
+    if (data.longitude) data.longitude = parseFloat(data.longitude);
+
+    try {
+        const url = isEdit ? `/api/restaurants/${itemId}` : '/api/restaurants/';
+        const method = isEdit ? 'PUT' : 'POST';
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Ошибка сохранения');
+        }
+        successDiv.classList.remove('d-none');
+        setTimeout(() => { window.location.href = '/admin/restaurants'; }, 1500);
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}
