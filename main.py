@@ -204,6 +204,31 @@ def admin_souvenirs_edit(request: Request, item_id: int):
         "item_id": item_id
     })
 
+# безопасность
+@app.get("/admin/safety")
+def admin_safety_list(request: Request):
+    return templates.TemplateResponse(request, "admin/safety_list.html", {"request": request})
+
+@app.get("/admin/safety/new")
+def admin_safety_new(request: Request):
+    return templates.TemplateResponse(request, "admin/safety_form.html", {
+        "request": request,
+        "title": "Новая запись",
+        "back_url": "/admin/safety",
+        "is_edit": False,
+        "item_id": None
+    })
+
+@app.get("/admin/safety/{item_id}/edit")
+def admin_safety_edit(request: Request, item_id: int):
+    return templates.TemplateResponse(request, "admin/safety_form.html", {
+        "request": request,
+        "title": "Редактировать запись",
+        "back_url": "/admin/safety",
+        "is_edit": True,
+        "item_id": item_id
+    })
+
 # заглушки для остальных страниц 
 @app.get("/attractions")
 def attractions_page(request: Request): return templates.TemplateResponse(request, "attractions.html", {"request": request})

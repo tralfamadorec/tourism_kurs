@@ -168,10 +168,10 @@ class SouvenirResponse(SouvenirBase):
     model_config = ConfigDict(from_attributes=True)
 
 class SafetyObjectBase(BaseModel):
-    name: str = Field(..., min_length=2, max_length=255)
-    category: str = Field(..., min_length=2, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+    category: str = Field(..., min_length=1, max_length=50)
     address: Optional[str] = None
-    phone: str = Field(..., min_length=5, max_length=20)
+    phone: str = Field(..., min_length=1, max_length=20)
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -182,6 +182,14 @@ class SafetyObjectResponse(SafetyObjectBase):
     id: int
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+class SafetyObjectUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=255)
+    category: Optional[str] = Field(None, min_length=2, max_length=50)
+    address: Optional[str] = None
+    phone: Optional[str] = Field(None, min_length=2, max_length=20)  # ← min_length=2!
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class PostcardTemplateBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=255)

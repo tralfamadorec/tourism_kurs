@@ -1,0 +1,83 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Справочник безопасности{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Экстренные службы и медицинские учреждения</h2>
+    <a href="/admin/safety/new" class="btn btn-primary">➕ Добавить запись</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Название</th>
+                        <th>Категория</th>
+                        <th>Телефон</th>
+                        <th>Адрес</th>
+                        <th class="text-end">Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="safetyTable">
+                    <tr><td colspan="5" class="text-center py-4">Загрузка данных...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+async function loadSafetyObjects() {
+    const tbody = document.getElementById('safetyTable');
+    try {
+        const data = await apiRequest('/api/safety/?limit=100');
+        
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Нет записей в справочнике</td></tr>';
+            return;
+        }
+
+        const icons = {
+            'Полиция': '👮',
+            'МЧС': '🚒',
+            'Медицина': '🏥',
+            'Аптека': '💊',
+            'Скорая помощь': '🚑'
+        };
+
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td><strong>${icons[item.category] || '📍'} ${item.name}</strong></td>
+                <td><span class="badge bg-info text-dark">${item.category}</span></td>
+                <td><a href="tel:${item.phone}" class="text-decoration-none">${item.phone}</a></td>
+                <td>${item.address || '—'}</td>
+                <td class="text-end">
+                    <a href="/admin/safety/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deleteSafety(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Ошибка загрузки: ${err.message}</td></tr>`;
+    }
+}
+
+async function deleteSafety(id) {
+    if (!confirm('Удалить эту запись из справочника?')) return;
+    try {
+        await apiRequest(`/api/safety/${id}`, { method: 'DELETE' });
+        loadSafetyObjects();
+    } catch (err) {
+        alert('Ошибка удаления: ' + err.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadSafetyObjects);
+</script>
+{% endblock %}

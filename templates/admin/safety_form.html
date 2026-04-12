@@ -1,0 +1,137 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ 'Редактировать' if is_edit else 'Новая' }} запись безопасности{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ title }}</h2>
+    <a href="/admin/safety" class="btn btn-outline-secondary">← Назад к справочнику</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form id="safetyForm">
+            <div class="mb-3">
+                <label for="name" class="form-label">Название организации *</label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       placeholder="Например: Отдел полиции №3" required>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="category" class="form-label">Категория *</label>
+                    <select class="form-select" id="category" name="category" required>
+                        <option value="">Выберите категорию...</option>
+                        <option value="Полиция">👮 Полиция</option>
+                        <option value="МЧС">🚒 МЧС</option>
+                        <option value="Скорая помощь">🚑 Скорая помощь</option>
+                        <option value="Медицина">🏥 Медицинское учреждение</option>
+                        <option value="Аптека">💊 Аптека</option>
+                        <option value="Другое">📍 Другое</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="phone" class="form-label">Телефон *</label>
+                    <input type="tel" class="form-control" id="phone" name="phone" 
+                           placeholder="02, 03, +7..." required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label">Адрес</label>
+                <input type="text" class="form-control" id="address" name="address" 
+                       placeholder="г. Ачинск, ул...">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="latitude" class="form-label">Широта</label>
+                    <input type="number" step="any" class="form-control" id="latitude" name="latitude">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="longitude" class="form-label">Долгота</label>
+                    <input type="number" step="any" class="form-control" id="longitude" name="longitude">
+                </div>
+            </div>
+
+            <div id="formError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                <a href="/admin/safety" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('safetyForm');
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const itemId = {{ item_id if is_edit else 'null' }};
+
+if (isEdit && itemId) {
+    loadSafetyData(itemId);
+}
+
+async function loadSafetyData(id) {
+    try {
+        const data = await apiRequest(`/api/safety/${id}`);
+        
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('category').value = data.category || '';
+        document.getElementById('phone').value = data.phone || '';
+        document.getElementById('address').value = data.address || '';
+        document.getElementById('latitude').value = data.latitude || '';
+        document.getElementById('longitude').value = data.longitude || '';
+        
+    } catch (err) {
+        document.getElementById('formError').textContent = 'Ошибка загрузки: ' + err.message;
+        document.getElementById('formError').classList.remove('d-none');
+    }
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+
+    const data = {};
+    new FormData(form).forEach((value, key) => {
+        if (value) data[key] = value;
+    });
+    
+    if (data.latitude) data.latitude = parseFloat(data.latitude);
+    if (data.longitude) data.longitude = parseFloat(data.longitude);
+
+    try {
+        const url = isEdit ? `/api/safety/${itemId}` : '/api/safety/';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Ошибка сохранения');
+        }
+
+        successDiv.classList.remove('d-none');
+        setTimeout(() => { window.location.href = '/admin/safety'; }, 1500);
+
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}
