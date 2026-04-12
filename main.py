@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
+import httpx
+from fastapi import HTTPException
 
 from routes import attractions, auth, accommodations, events, restaurants, souvenirs, safety, postcards
 from routes import routes as routes_router
@@ -51,6 +53,7 @@ def login_page(request: Request):
 def admin_dashboard(request: Request):
     return templates.TemplateResponse(request, "admin/base_admin.html", {"request": request})
 
+# достопримечательности
 @app.get("/admin/attractions")
 def admin_attractions_list(request: Request):
     return templates.TemplateResponse(request, "admin/attractions_list.html", {"request": request})
@@ -71,9 +74,34 @@ def admin_attractions_edit(request: Request, item_id: int):
         "request": request,
         "title": "Редактировать достопримечательность",
         "back_url": "/admin/attractions",
-        "api_path": "/attractions",
         "is_edit": True,
+        "item_id": item_id
+    })
+
+# маршруты
+@app.get("/admin/routes")
+def admin_routes_list(request: Request):
+    return templates.TemplateResponse(request, "admin/routes_list.html", {"request": request})
+
+@app.get("/admin/routes/new")
+def admin_routes_new(request: Request):
+    return templates.TemplateResponse(request, "admin/routes_form.html", {
+        "request": request,
+        "title": "Новый маршрут",
+        "back_url": "/admin/routes",
+        "api_path": "/routes",
+        "is_edit": False,
         "item": None
+    })
+
+@app.get("/admin/routes/{item_id}/edit")
+def admin_routes_edit(request: Request, item_id: int):
+    return templates.TemplateResponse(request, "admin/routes_form.html", {
+        "request": request,
+        "title": "Редактировать маршрут",
+        "back_url": "/admin/routes",  # ← добавил для единообразия
+        "is_edit": True,
+        "item_id": item_id  # ← передаем ID в шаблон
     })
 
 # заглушки для остальных страниц 
