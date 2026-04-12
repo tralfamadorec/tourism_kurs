@@ -1,6 +1,6 @@
 import asyncio
 from database import async_session_maker
-from models import User, Attraction, Accommodation, Event, Restaurant
+from models import User, Attraction, Accommodation, Event, Restaurant, Route
 from security import get_password_hash
 from sqlalchemy import select
 from datetime import datetime
@@ -92,6 +92,27 @@ async def seed_db():
                 print(f"Создан ресторан: {r.name}")
             else:
                 print(f"Ресторан '{r_data['name']}' уже существует")
+
+        # маршруты
+        routes_data = [
+            {"title": "Исторический центр Ачинска", "description": "Пешеходная экскурсия по старинным зданиям", "duration_hours": 2.5, "difficulty": "Лёгкий", "transport_type": "Пешком"},
+            {"title": "Музейный квартал", "description": "Посещение краеведческого музея и выставки", "duration_hours": 3.0, "difficulty": "Лёгкий", "transport_type": "Пешком"},
+            {"title": "Природный маршрут «Сосновый бор»", "description": "Эко-тропа с смотровыми площадками", "duration_hours": 4.0, "difficulty": "Средний", "transport_type": "Автомобиль"},
+            {"title": "Гастрономический тур", "description": "Дегустация местных блюд в кафе города", "duration_hours": 3.5, "difficulty": "Лёгкий", "transport_type": "Пешком"},
+            {"title": "Промышленное наследие", "description": "Обзор предприятий и индустриальных объектов", "duration_hours": 5.0, "difficulty": "Средний", "transport_type": "Автобус"},
+            {"title": "Семейный маршрут", "description": "Парки, детские площадки и зооуголок", "duration_hours": 2.0, "difficulty": "Лёгкий", "transport_type": "Пешком"},
+            {"title": "Вечерний Ачинск", "description": "Освещённые набережные и фонтаны", "duration_hours": 1.5, "difficulty": "Лёгкий", "transport_type": "Пешком"},
+        ]
+
+        for r_data in routes_data:
+            result = await session.execute(select(Route).where(Route.title == r_data["title"]))
+            if not result.scalar_one_or_none():
+                r = Route(**r_data, created_by=admin.id)
+                session.add(r)
+                await session.commit()
+                print(f"Создан маршрут: {r.title}")
+            else:
+                print(f"Маршрут '{r_data['title']}' уже существует")
 
 if __name__ == "__main__":
     asyncio.run(seed_db())

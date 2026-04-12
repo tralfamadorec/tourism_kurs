@@ -74,3 +74,16 @@ class Restaurant(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
+
+class Route(Base):
+    __tablename__ = "routes"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    duration_hours = Column(Float, nullable=True)
+    difficulty = Column(String(50), nullable=True)
+    transport_type = Column(String(50), nullable=True)
+    photo_url = Column(String, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True)

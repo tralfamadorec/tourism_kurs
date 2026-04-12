@@ -117,3 +117,30 @@ class RestaurantResponse(RestaurantBase):
     created_at: datetime
     is_active: bool
     model_config = ConfigDict(from_attributes=True)
+
+class RouteBase(BaseModel):
+    title: str = Field(..., min_length=3, max_length=255)
+    description: Optional[str] = None
+    duration_hours: Optional[float] = Field(None, ge=0.5)
+    difficulty: Optional[str] = Field(None, max_length=50)
+    transport_type: Optional[str] = Field(None, max_length=50)
+    photo_url: Optional[str] = None
+
+class RouteCreate(RouteBase): 
+    pass
+
+class RouteUpdate(RouteBase):
+    title: Optional[str] = Field(None, min_length=3, max_length=255)
+
+class RouteResponse(RouteBase):
+    id: int
+    created_by: Optional[int] = None
+    created_at: datetime
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: List[T]
+    total: int
+    page: int
+    per_page: int

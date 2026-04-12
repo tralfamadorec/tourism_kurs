@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from routes import attractions, auth, accommodations, events, restaurants
+from routes import routes as routes_router
 
 app = FastAPI(
     title="Ачинск туристический",
@@ -29,8 +30,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # подключение роутеров
 app.include_router(attractions.router)
 app.include_router(auth.router)
-app.include_router(accomodations.router)
+app.include_router(accommodations.router)
 app.include_router(events.router)
+app.include_router(routes_router.router)
 
 @app.get("/")
 def root():
