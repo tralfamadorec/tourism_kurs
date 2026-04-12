@@ -58,3 +58,19 @@ class Event(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True) 
+
+class Restaurant(Base):
+    __tablename__ = "restaurants"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    address = Column(String(255), nullable=True)
+    phone = Column(String(20), nullable=True)
+    website = Column(String(255), nullable=True)
+    cuisine = Column(String(100), nullable=True)  # Тип кухни
+    avg_price = Column(Integer, nullable=True)    # Средний чек (руб)
+    rating = Column(Float, nullable=True)         # Рейтинг 1-5
+    photo_url = Column(String, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True)

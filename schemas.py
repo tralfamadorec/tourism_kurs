@@ -60,7 +60,8 @@ class AccommodationBase(BaseModel):
     price_per_night: Optional[int] = Field(None, ge=0)
     photo_url: Optional[str] = None
 
-class AccommodationCreate(AccommodationBase): pass
+class AccommodationCreate(AccommodationBase): 
+    pass
 
 class AccommodationUpdate(AccommodationBase):
     name: Optional[str] = Field(None, min_length=3, max_length=255)
@@ -79,13 +80,38 @@ class EventBase(BaseModel):
     location: Optional[str] = None
     photo_url: Optional[str] = None
 
-class EventCreate(EventBase): pass
+class EventCreate(EventBase): 
+    pass
 
 class EventUpdate(EventBase):
     title: Optional[str] = Field(None, min_length=3, max_length=255)
     event_date: Optional[datetime] = None
 
 class EventResponse(EventBase):
+    id: int
+    created_by: Optional[int] = None
+    created_at: datetime
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)
+
+class RestaurantBase(BaseModel):
+    name: str = Field(..., min_length=3, max_length=255)
+    description: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    cuisine: Optional[str] = None
+    avg_price: Optional[int] = Field(None, ge=0)
+    rating: Optional[float] = Field(None, ge=0, le=5)
+    photo_url: Optional[str] = None
+
+class RestaurantCreate(RestaurantBase): 
+    pass
+
+class RestaurantUpdate(RestaurantBase):
+    name: Optional[str] = Field(None, min_length=3, max_length=255)
+
+class RestaurantResponse(RestaurantBase):
     id: int
     created_by: Optional[int] = None
     created_at: datetime

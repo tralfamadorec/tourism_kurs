@@ -1,6 +1,6 @@
 import asyncio
 from database import async_session_maker
-from models import User, Attraction, Accommodation, Event
+from models import User, Attraction, Accommodation, Event, Restaurant
 from security import get_password_hash
 from sqlalchemy import select
 from datetime import datetime
@@ -76,6 +76,22 @@ async def seed_db():
                 print(f"Создано событие: {ev.title}")
             else:
                 print(f"Событие '{ev_data['title']}' уже существует")
+
+        # рестораны
+        restaurants_data = [
+            {"name": "Кафе 'Березка'", "description": "Домашняя кухня", "address": "ул. Ленина, 5", "cuisine": "Русская", "avg_price": 800, "rating": 4.5},
+            {"name": "Пиццерия 'Италия'", "description": "Лучшая пицца в городе", "address": "пр. Мира, 12", "cuisine": "Итальянская", "avg_price": 1200, "rating": 4.8},
+        ]
+        
+        for r_data in restaurants_data:
+            result = await session.execute(select(Restaurant).where(Restaurant.name == r_data["name"]))
+            if not result.scalar_one_or_none():
+                r = Restaurant(**r_data, created_by=admin.id)
+                session.add(r)
+                await session.commit()
+                print(f"Создан ресторан: {r.name}")
+            else:
+                print(f"Ресторан '{r_data['name']}' уже существует")
 
 if __name__ == "__main__":
     asyncio.run(seed_db())

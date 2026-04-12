@@ -1,15 +1,32 @@
 from fastapi import FastAPI
-from routes import attractions
-from routes import auth
-from routes import accomodations
-from routes import events
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+
+from routes import attractions, auth, accommodations, events, restaurants
 
 app = FastAPI(
     title="Ачинск туристический",
     description="Информационная система ТИЦ г. Ачинска",
-    version="0.1.0"
+    version="1.0.0"
 )
 
+# настройка CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# настройка раздачи статики
+if not os.path.exists("static"):
+    os.makedirs("static")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# подключение роутеров
 app.include_router(attractions.router)
 app.include_router(auth.router)
 app.include_router(accomodations.router)
@@ -17,4 +34,4 @@ app.include_router(events.router)
 
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "Сервер запущен"}
+    return {"status": "ok", "message": "Backend API is ready for Frontend integration"}
