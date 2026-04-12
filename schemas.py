@@ -144,3 +144,48 @@ class PaginatedResponse(BaseModel, Generic[T]):
     total: int
     page: int
     per_page: int
+
+class SouvenirBase(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    producer: Optional[str] = None
+    price: Optional[int] = Field(None, ge=0)
+    description: Optional[str] = None
+    photo_url: Optional[str] = None
+
+class SouvenirCreate(SouvenirBase): 
+    pass
+
+class SouvenirUpdate(SouvenirBase):
+    name: Optional[str] = Field(None, min_length=2, max_length=255)
+
+class SouvenirResponse(SouvenirBase):
+    id: int
+    created_by: Optional[int] = None
+    created_at: datetime
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)
+
+class SafetyObjectBase(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    category: str = Field(..., min_length=2, max_length=50)
+    address: Optional[str] = None
+    phone: str = Field(..., min_length=5, max_length=20)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class SafetyObjectCreate(SafetyObjectBase): 
+    pass
+
+class SafetyObjectResponse(SafetyObjectBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class PostcardTemplateBase(BaseModel):
+    title: str = Field(..., min_length=2, max_length=255)
+    image_url: str
+    description: Optional[str] = None
+
+class PostcardTemplateResponse(PostcardTemplateBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)

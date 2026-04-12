@@ -1,6 +1,6 @@
 import asyncio
 from database import async_session_maker
-from models import User, Attraction, Accommodation, Event, Restaurant, Route
+from models import User, Attraction, Accommodation, Event, Restaurant, Route, Souvenir, SafetyObject, PostcardTemplate
 from security import get_password_hash
 from sqlalchemy import select
 from datetime import datetime
@@ -113,6 +113,47 @@ async def seed_db():
                 print(f"Создан маршрут: {r.title}")
             else:
                 print(f"Маршрут '{r_data['title']}' уже существует")
+
+        # сувениры
+        souvenirs_data = [
+            {"name": "Кедровый бальзам", "producer": "Сибирский лекарь", "price": 350, "description": "Оздоровительный бальзам"},
+            {"name": "Варежки из шерсти", "producer": "Ачинские мастерицы", "price": 800, "description": "Теплые варежки с узором"}
+        ]
+        for data in souvenirs_data:
+            result = await session.execute(select(Souvenir).where(Souvenir.name == data["name"]))
+            if not result.scalar_one_or_none():
+                obj = Souvenir(**data, created_by=admin.id)
+                session.add(obj)
+                await session.commit()
+                print(f"Создан сувенир: {obj.name}")
+
+        # объекты безопасности
+        safety_data = [
+            {"name": "Отдел полиции №3", "category": "Полиция", "address": "ул. Ленина, 15", "phone": "02"},
+            {"name": "Городская больница №1", "category": "Медицина", "address": "ул. Мира, 2", "phone": "03"},
+            {"name": "МЧС Ачинска", "category": "МЧС", "address": "ул. Гагарина, 10", "phone": "01"}
+        ]
+        for data in safety_data:
+            result = await session.execute(select(SafetyObject).where(SafetyObject.name == data["name"]))
+            if not result.scalar_one_or_none():
+                obj = SafetyObject(**data, created_by=admin.id)
+                session.add(obj)
+                await session.commit()
+                print(f"Создан объект безопасности: {obj.name}")
+
+        # шаблоны открыток
+        postcards_data = [
+            {"title": "Вид на реку Чулым", "image_url": "/static/images/postcards/chulym.jpg", "description": "Панорама реки в летний период"},
+            {"title": "Центральная площадь", "image_url": "/static/images/postcards/square.jpg", "description": "Вид на площадь Ленина"},
+            {"title": "Закат над Ачинском", "image_url": "/static/images/postcards/sunset.jpg", "description": "Вечерний вид с набережной"}
+        ]
+        for data in postcards_data:
+            result = await session.execute(select(PostcardTemplate).where(PostcardTemplate.title == data["title"]))
+            if not result.scalar_one_or_none():
+                obj = PostcardTemplate(**data)
+                session.add(obj)
+                await session.commit()
+                print(f"Создан шаблон открытки: {obj.title}")
 
 if __name__ == "__main__":
     asyncio.run(seed_db())

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from routes import attractions, auth, accommodations, events, restaurants
+from routes import attractions, auth, accommodations, events, restaurants, souvenirs, safety, postcards
 from routes import routes as routes_router
 
 app = FastAPI(
@@ -33,6 +33,9 @@ app.include_router(auth.router)
 app.include_router(accommodations.router)
 app.include_router(events.router)
 app.include_router(routes_router.router)
+app.include_router(souvenirs.router)
+app.include_router(safety.router)
+app.include_router(postcards.router)
 
 @app.get("/")
 def root():
