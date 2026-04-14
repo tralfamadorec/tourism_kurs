@@ -292,3 +292,7 @@ def postcards_page(request: Request):
 @app.get("/map")
 def map_page(request: Request):
     return templates.TemplateResponse(request, "map.html", {"request": request})
+
+@app.get("/contacts")
+def contacts_page(request: Request):
+    return templates.TemplateResponse(request, "contacts.html", {"request": request})
