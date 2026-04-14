@@ -19,16 +19,26 @@
             </button>
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link" href="/attractions">Куда сходить?</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/routes">Маршруты</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/hotels">Гостиницы</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/food">Где вкусно?</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/events">События</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/safety">Безопасность</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Все разделы
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="/accommodations">Размещение</a></li>
+                            <li><a class="dropdown-item" href="/attractions">Достопримечательности</a></li>
+                            <li><a class="dropdown-item" href="/events">События</a></li>
+                            <li><a class="dropdown-item" href="/food">Где вкусно?</a></li>
+                            <li><a class="dropdown-item" href="/postcards">Открытки</a></li>
+                            <li><a class="dropdown-item" href="/routes">Маршруты</a></li>
+                            <li><a class="dropdown-item" href="/safety">Безопасность</a></li>
+                            <li><a class="dropdown-item" href="/souvenirs">Сувениры</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/map">Интерактивная карта</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contacts">Контакты</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-2">
                     <a href="/admin" class="btn btn-outline-light btn-sm d-none" id="adminBtn">Админ-панель</a>
-
                     <span id="userStatus" class="text-white me-3 small"></span>
                     <a href="/login" class="btn btn-outline-light btn-sm" id="authBtn">Вход</a>
                 </div>
@@ -40,7 +50,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-light text-center py-3 border-top">
+    <footer class="bg-light text-center py-3 border-top" id="footer">
         <div class="container">
             <p class="mb-0 text-muted">© 2024 ТИЦ г. Ачинска.</p>
         </div>

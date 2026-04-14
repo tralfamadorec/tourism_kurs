@@ -4,6 +4,31 @@ from datetime import datetime
 
 T = TypeVar('T')
 
+class AccommodationBase(BaseModel):
+    name: str = Field(..., min_length=3, max_length=255)
+    description: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=20)
+    website: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    rating: Optional[float] = Field(None, ge=0, le=5)
+    price_per_night: Optional[int] = Field(None, ge=0)
+    photo_url: Optional[str] = None
+
+class AccommodationCreate(AccommodationBase): 
+    pass
+
+class AccommodationUpdate(AccommodationBase):
+    name: Optional[str] = Field(None, min_length=3, max_length=255)
+
+class AccommodationResponse(AccommodationBase):
+    id: int
+    created_by: Optional[int] = None
+    created_at: datetime
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)
+
 class AttractionBase(BaseModel):
     name: str = Field(..., min_length=3, max_length=255, description="Название достопримечательности")
     description: Optional[str] = Field(None, description="Описание объекта")
@@ -29,51 +54,6 @@ class AttractionUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     photo_url: Optional[str] = None
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
-
-class UserCreate(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
-    email: str = Field(..., pattern=r'^[\w\.-]+@[\w\.-]+\.\w+$')
-    password: str = Field(..., min_length=6, max_length=128)
-
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    email: str
-    is_active: bool
-
-    model_config = ConfigDict(from_attributes=True)
-
-class AccommodationBase(BaseModel):
-    name: str = Field(..., min_length=3, max_length=255)
-    description: Optional[str] = None
-    address: Optional[str] = None
-    phone: Optional[str] = Field(None, max_length=20)
-    website: Optional[str] = None
-    latitude: Optional[float] = Field(None, ge=-90, le=90)
-    longitude: Optional[float] = Field(None, ge=-180, le=180)
-    rating: Optional[float] = Field(None, ge=0, le=5)
-    price_per_night: Optional[int] = Field(None, ge=0)
-    photo_url: Optional[str] = None
-
-class AccommodationCreate(AccommodationBase): 
-    pass
-
-class AccommodationUpdate(AccommodationBase):
-    name: Optional[str] = Field(None, min_length=3, max_length=255)
-
-class AccommodationResponse(AccommodationBase):
-    id: int
-    created_by: Optional[int] = None
-    created_at: datetime
-    is_active: bool
-    model_config = ConfigDict(from_attributes=True)
 
 class EventBase(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)
@@ -106,6 +86,8 @@ class FoodBase(BaseModel):
     avg_price: Optional[int] = Field(None, ge=0)
     rating: Optional[float] = Field(None, ge=0, le=5)
     photo_url: Optional[str] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
 
 class FoodCreate(FoodBase): 
     pass
@@ -118,6 +100,24 @@ class FoodResponse(FoodBase):
     created_by: Optional[int] = None
     created_at: datetime
     is_active: bool
+    model_config = ConfigDict(from_attributes=True)
+
+class PostcardTemplateBase(BaseModel):
+    title: str = Field(..., min_length=2, max_length=255)
+    image_url: str
+    description: Optional[str] = None
+
+class PostcardTemplateCreate(PostcardTemplateBase):
+    pass
+
+class PostcardTemplateUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=2, max_length=255)
+    image_url: Optional[str] = None
+    description: Optional[str] = None
+
+class PostcardTemplateResponse(PostcardTemplateBase):
+    id: int
+    is_active: bool = True
     model_config = ConfigDict(from_attributes=True)
 
 class RouteBase(BaseModel):
@@ -135,32 +135,6 @@ class RouteUpdate(RouteBase):
     title: Optional[str] = Field(None, min_length=3, max_length=255)
 
 class RouteResponse(RouteBase):
-    id: int
-    created_by: Optional[int] = None
-    created_at: datetime
-    is_active: bool
-    model_config = ConfigDict(from_attributes=True)
-
-class PaginatedResponse(BaseModel, Generic[T]):
-    items: List[T]
-    total: int
-    page: int
-    per_page: int
-
-class SouvenirBase(BaseModel):
-    name: str = Field(..., min_length=2, max_length=255)
-    producer: Optional[str] = None
-    price: Optional[int] = Field(None, ge=0)
-    description: Optional[str] = None
-    photo_url: Optional[str] = None
-
-class SouvenirCreate(SouvenirBase): 
-    pass
-
-class SouvenirUpdate(SouvenirBase):
-    name: Optional[str] = Field(None, min_length=2, max_length=255)
-
-class SouvenirResponse(SouvenirBase):
     id: int
     created_by: Optional[int] = None
     created_at: datetime
@@ -191,20 +165,48 @@ class SafetyObjectUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
-class PostcardTemplateBase(BaseModel):
-    title: str = Field(..., min_length=2, max_length=255)
-    image_url: str
+class SouvenirBase(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    producer: Optional[str] = None
+    price: Optional[int] = Field(None, ge=0)
     description: Optional[str] = None
+    photo_url: Optional[str] = None
 
-class PostcardTemplateCreate(PostcardTemplateBase):
+class SouvenirCreate(SouvenirBase): 
     pass
 
-class PostcardTemplateUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=2, max_length=255)
-    image_url: Optional[str] = None
-    description: Optional[str] = None
+class SouvenirUpdate(SouvenirBase):
+    name: Optional[str] = Field(None, min_length=2, max_length=255)
 
-class PostcardTemplateResponse(PostcardTemplateBase):
+class SouvenirResponse(SouvenirBase):
     id: int
-    is_active: bool = True
+    created_by: Optional[int] = None
+    created_at: datetime
+    is_active: bool
     model_config = ConfigDict(from_attributes=True)
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: str = Field(..., pattern=r'^[\w\.-]+@[\w\.-]+\.\w+$')
+    password: str = Field(..., min_length=6, max_length=128)
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: List[T]
+    total: int
+    page: int
+    per_page: int
