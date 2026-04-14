@@ -1,18 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Сувенирная продукция Ачинска{% endblock %}
+{% block title %}Сувениры из Ачинска{% endblock %}
 
 {% block content %}
-<!-- Заголовок -->
 <div class="text-center py-4 bg-light rounded mb-4">
-    <h1>Сувениры Ачинска</h1>
-    <p class="text-muted">Памятные подарки от местных мастеров</p>
+    <h1>Сувениры из Ачинска</h1>
+    <p class="text-muted">Памятные подарки от местных мастеров и производителей</p>
 </div>
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-5">
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
                 <label class="form-label small text-muted">Поиск</label>
                 <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название или производитель...">
             </div>
@@ -24,16 +23,34 @@
                     <option value="500">До 500 ₽</option>
                     <option value="1000">До 1000 ₽</option>
                     <option value="2000">До 2000 ₽</option>
+                    <option value="5000">До 5000 ₽</option>
                 </select>
             </div>
-
-            <div class="col-md-4">
-                <label class="form-label small text-muted">Сортировка</label>
-                <select id="sortFilter" class="form-select form-select-sm">
-                    <option value="price_asc">Сначала дешевые</option>
-                    <option value="price_desc">Сначала дорогие</option>
-                    <option value="name">По названию</option>
+            
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Категория</label>
+                <select id="categoryFilter" class="form-select form-select-sm">
+                    <option value="">Все категории</option>
+                    <option value="Съедобные">Съедобные</option>
+                    <option value="Одежда">Одежда и аксессуары</option>
+                    <option value="Декор">Декор и интерьер</option>
+                    <option value="Прочее">Прочее</option>
                 </select>
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label small text-muted d-block mb-2">Сортировка</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="price_asc">Сначала дешевле</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="price_desc">Сначала дороже</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="name">По названию</button>
+                </div>
             </div>
         </div>
     </div>
@@ -56,7 +73,8 @@
 {% block scripts %}
 <script>
 let currentPage = 1;
-const limit = 8; 
+const limit = 6;
+let currentSort = 'price_asc';
 
 async function loadSouvenirs(append = false) {
     const listEl = document.getElementById('souvenirsList');
@@ -69,13 +87,14 @@ async function loadSouvenirs(append = false) {
     try {
         const search = document.getElementById('searchInput').value;
         const maxPrice = document.getElementById('priceFilter').value;
-        const sort = document.getElementById('sortFilter').value;
+        const category = document.getElementById('categoryFilter').value;
         
         let url = `/api/souvenirs/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
         
         if (search) url += `&search=${encodeURIComponent(search)}`;
         if (maxPrice) url += `&max_price=${maxPrice}`;
-        if (sort) url += `&sort=${sort}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+        url += `&sort=${currentSort}`;
 
         const response = await fetch(url);
         const data = await response.json();
@@ -95,7 +114,7 @@ async function loadSouvenirs(append = false) {
         
         data.forEach(item => {
             const col = document.createElement('div');
-            col.className = 'col-md-4 col-lg-3';
+            col.className = 'col-md-4 col-lg-3'; // Компактные карточки для сувениров
             
             col.innerHTML = `
                 <div class="card h-100 shadow-sm hover-shadow">
@@ -125,25 +144,48 @@ async function loadSouvenirs(append = false) {
     }
 }
 
-// обработчики
+// обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadSouvenirs(); });
 document.getElementById('priceFilter').addEventListener('change', () => { currentPage = 1; loadSouvenirs(); });
-document.getElementById('sortFilter').addEventListener('change', () => { currentPage = 1; loadSouvenirs(); });
+document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadSouvenirs(); });
 
+// обработчики сортировки
+document.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentSort = e.target.dataset.sort;
+        currentPage = 1;
+        loadSouvenirs();
+    });
+});
+
+// кнопка сброса
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('priceFilter').value = '';
+    document.getElementById('categoryFilter').value = '';
+    currentSort = 'price_asc';
+    currentPage = 1;
+    
+    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-sort="price_asc"]').classList.add('active');
+    
+    loadSouvenirs();
+});
+
+// показать еще
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadSouvenirs(true);
 });
 
+// инициализация
 document.addEventListener('DOMContentLoaded', () => loadSouvenirs());
 </script>
 
 <style>
-.hover-shadow {
-    transition: box-shadow 0.3s ease;
-}
-.hover-shadow:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
+.hover-shadow { transition: box-shadow 0.3s ease; }
+.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
 </style>
 {% endblock %}

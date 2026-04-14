@@ -13,17 +13,37 @@ router = APIRouter(prefix="/api/souvenirs", tags=["Сувениры"])
 
 @router.get("/", response_model=List[SouvenirResponse])
 async def get_souvenirs(
-    search: Optional[str] = Query(None, description="Нечеткий поиск по названию"),
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Вернуть не более N записей"),
+    limit: int = Query(50, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    search: Optional[str] = Query(None, description="Поиск по названию или производителю"),
+    max_price: Optional[int] = Query(None, ge=0),
+    category: Optional[str] = Query(None, description="Категория сувенира"),
+    sort: str = Query("price_asc", description="price_asc, price_desc, name"),
     db: AsyncSession = Depends(get_db)
 ):
     query = select(Souvenir).where(Souvenir.is_active == True)
     
+    # фильтры
     if search:
-        query = query.where(Souvenir.name.ilike(f"%{search}%"))
+        query = query.where(
+            (Souvenir.name.ilike(f"%{search}%")) | 
+            (Souvenir.producer.ilike(f"%{search}%"))
+        )
+    if max_price:
+        query = query.where(Souvenir.price <= max_price)
+    if category:
+        query = query.where(Souvenir.category.ilike(f"%{category}%"))
         
-    result = await db.execute(query.order_by(Souvenir.name).offset(skip).limit(limit))
+    # сортировка
+    if sort == "price_desc":
+        query = query.order_by(Souvenir.price.desc())
+    elif sort == "name":
+        query = query.order_by(Souvenir.name.asc())
+    else: 
+        query = query.order_by(Souvenir.price.asc())
+        
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 @router.get("/{souvenir_id}", response_model=SouvenirResponse)

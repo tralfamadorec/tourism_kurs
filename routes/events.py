@@ -14,18 +14,42 @@ router = APIRouter(prefix="/api/events", tags=["События"])
 
 @router.get("/", response_model=List[EventResponse])
 async def get_events(
-    date_from: Optional[datetime] = Query(None, description="Фильтр: события от даты"),
-    date_to: Optional[datetime] = Query(None, description="Фильтр: события до даты"),
+    limit: int = Query(50, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    search: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    location: Optional[str] = Query(None),
+    sort: str = Query("date_asc"),  # date_asc, date_desc, title
     db: AsyncSession = Depends(get_db)
 ):
     query = select(Event).where(Event.is_active == True)
     
-    if date_from:
-        query = query.where(Event.event_date >= date_from)
-    if date_to:
-        query = query.where(Event.event_date <= date_to)
+    if search:
+        query = query.where(Event.title.ilike(f"%{search}%"))
+    if category:
+        query = query.where(Event.category.ilike(f"%{category}%"))
+    if location:
+        query = query.where(Event.location.ilike(f"%{location}%"))
         
-    result = await db.execute(query.order_by(Event.event_date.asc()))
+    # сортировка
+    if sort == "date_desc":
+        query = query.order_by(
+            Event.event_date.desc().nullslast(),
+            Event.id.desc()
+        )
+    elif sort == "title":
+        query = query.order_by(
+            Event.title.asc(),
+            Event.event_date.asc().nullslast()
+        )
+    else:  # date_asc
+        query = query.order_by(
+            Event.event_date.asc().nullslast(), 
+            Event.id.asc()  
+        )
+
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 @router.get("/{event_id}", response_model=EventResponse)

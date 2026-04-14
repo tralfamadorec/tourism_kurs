@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}События и мероприятия в Ачинске{% endblock %}
+{% block title %}Афиша событий Ачинска{% endblock %}
 
 {% block content %}
 <div class="text-center py-4 bg-light rounded mb-4">
@@ -10,19 +10,13 @@
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
-        <div class="row g-3">
+        <div class="row g-3 mb-3">
             <div class="col-md-4">
-                <label class="form-label small text-muted">Когда</label>
-                <select id="dateFilter" class="form-select form-select-sm">
-                    <option value="">Все события</option>
-                    <option value="today">Сегодня</option>
-                    <option value="tomorrow">Завтра</option>
-                    <option value="week">На этой неделе</option>
-                    <option value="month">В этом месяце</option>
-                </select>
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название события...">
             </div>
             
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label small text-muted">Категория</label>
                 <select id="categoryFilter" class="form-select form-select-sm">
                     <option value="">Все категории</option>
@@ -33,18 +27,34 @@
                     <option value="Детям">Детям</option>
                 </select>
             </div>
-
-            <div class="col-md-4">
-                <label class="form-label small text-muted">Сортировка</label>
-                <select id="sortFilter" class="form-select form-select-sm">
-                    <option value="date_asc">Сначала ближайшие</option>
-                    <option value="date_desc">Сначала поздние</option>
-                </select>
+            
+            <!-- Место -->
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Место</label>
+                <input type="text" id="locationFilter" class="form-control form-control-sm" placeholder="Например: ДК">
+            </div>
+            
+            <!-- Кнопка сброса -->
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
+            </div>
+        </div>
+        
+        <!-- Сортировка (кнопки, как на скриншоте) -->
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label small text-muted d-block mb-2">Сортировка</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="date_asc">Сначала ближайшие</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="date_desc">Сначала поздние</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="title">По названию</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Список событий (заполняется через JS) -->
 <div id="eventsList" class="row g-4">
     <div class="col-12 text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
@@ -52,6 +62,7 @@
     </div>
 </div>
 
+<!-- Кнопка "Показать еще" -->
 <div class="text-center mt-5 mb-4">
     <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
         Показать еще
@@ -63,6 +74,7 @@
 <script>
 let currentPage = 1;
 const limit = 6;
+let currentSort = 'date_asc';
 
 async function loadEvents(append = false) {
     const listEl = document.getElementById('eventsList');
@@ -73,15 +85,16 @@ async function loadEvents(append = false) {
     }
     
     try {
-        const dateFilter = document.getElementById('dateFilter').value;
+        const search = document.getElementById('searchInput').value;
         const category = document.getElementById('categoryFilter').value;
-        const sort = document.getElementById('sortFilter').value;
+        const location = document.getElementById('locationFilter').value;
         
         let url = `/api/events/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
         
+        if (search) url += `&search=${encodeURIComponent(search)}`;
         if (category) url += `&category=${encodeURIComponent(category)}`;
-        if (sort) url += `&sort=${sort}`;
-        if (dateFilter) url += `&date_filter=${dateFilter}`;
+        if (location) url += `&location=${encodeURIComponent(location)}`;
+        url += `&sort=${currentSort}`;
 
         const response = await fetch(url);
         const data = await response.json();
@@ -89,7 +102,7 @@ async function loadEvents(append = false) {
         if (!append) listEl.innerHTML = '';
         
         if (data.length === 0 && currentPage === 1) {
-            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Событий пока нет</p></div>';
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Событий не найдено</p></div>';
             loadMoreBtn.classList.add('d-none');
             return;
         }
@@ -103,36 +116,20 @@ async function loadEvents(append = false) {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
             
-            // форматируем дату
             const eventDate = event.event_date ? new Date(event.event_date) : null;
             const dateStr = eventDate ? eventDate.toLocaleDateString('ru-RU', {
-                day: 'numeric',
-                month: 'long',
-                hour: '2-digit',
-                minute: '2-digit'
+                day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
             }) : 'Дата не указана';
             
-            // иконки категорий
-            const categoryIcons = {
-                'Концерт': '🎵',
-                'Выставка': '🎨',
-                'Фестиваль': '🎪',
-                'Спорт': '⚽',
-                'Детям': '🎈'
-            };
-            const icon = categoryIcons[event.category] || '📅';
-
             col.innerHTML = `
                 <div class="card h-100 shadow-sm hover-shadow">
                     ${event.photo_url ? `<img src="${event.photo_url}" class="card-img-top" alt="${event.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
                     <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="badge bg-primary">${icon} ${event.category || 'Событие'}</span>
-                            <small class="text-muted">${dateStr}</small>
-                        </div>
+                        <span class="badge bg-info text-dark mb-2">📅 ${dateStr}</span>
+                        <span class="badge bg-secondary mb-2">${event.category || 'Общее'}</span>
                         <h5 class="card-title">${event.title}</h5>
+                        <p class="card-text small text-muted">${event.location || 'Место не указано'}</p>
                         <p class="card-text small">${event.description?.substring(0, 100) || ''}${event.description?.length > 100 ? '...' : ''}</p>
-                        ${event.location ? `<p class="card-text small text-muted">📍 ${event.location}</p>` : ''}
                     </div>
                     <div class="card-body">
                         <a href="/events/${event.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
@@ -153,25 +150,50 @@ async function loadEvents(append = false) {
     }
 }
 
-// обработчики
-document.getElementById('dateFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
-document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
-document.getElementById('sortFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
+// === ОБРАБОТЧИКИ (точно как в attractions.html) ===
 
+// Фильтры
+document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadEvents(); });
+document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
+document.getElementById('locationFilter').addEventListener('input', () => { currentPage = 1; loadEvents(); });
+
+// Сортировка (кнопки)
+document.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentSort = e.target.dataset.sort;
+        currentPage = 1;
+        loadEvents();
+    });
+});
+
+// Сброс
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('locationFilter').value = '';
+    currentSort = 'date_asc';
+    currentPage = 1;
+    
+    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-sort="date_asc"]').classList.add('active');
+    
+    loadEvents();
+});
+
+// Показать еще
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadEvents(true);
 });
 
+// Инициализация
 document.addEventListener('DOMContentLoaded', () => loadEvents());
 </script>
 
 <style>
-.hover-shadow {
-    transition: box-shadow 0.3s ease;
-}
-.hover-shadow:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
+.hover-shadow { transition: box-shadow 0.3s ease; }
+.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
 </style>
 {% endblock %}

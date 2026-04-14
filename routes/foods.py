@@ -14,32 +14,30 @@ router = APIRouter(prefix="/api/foods", tags=["Питание"])
 async def get_foods(
     limit: int = Query(50, ge=1, le=100),
     skip: int = Query(0, ge=0),
-    cuisine: Optional[str] = Query(None, description="Фильтр по типу кухни"),
-    location: Optional[str] = Query(None, description="Фильтр по населенному пункту"),
-    accessibility: Optional[str] = Query(None, description="Фильтр по доступности"),
-    sort: str = Query("rating", description="Сортировка: rating, avg_price, name"),
+    search: Optional[str] = Query(None),
+    cuisine: Optional[str] = Query(None),
+    accessibility: Optional[str] = Query(None),
+    sort: str = Query("rating", description="rating, avg_price, name"),
     db: AsyncSession = Depends(get_db)
 ):
     query = select(Food).where(Food.is_active == True)
     
-    # фильтры
+    if search:
+        query = query.where(Food.name.ilike(f"%{search}%") | Food.cuisine.ilike(f"%{search}%"))
     if cuisine:
         query = query.where(Food.cuisine.ilike(f"%{cuisine}%"))
-    if location:
-        query = query.where(Food.address.ilike(f"%{location}%"))
     if accessibility == "accessible":
         query = query.where(Food.is_accessible == True)
     elif accessibility == "parking":
         query = query.where(Food.has_parking == True)
-    
-    # сортировка
+        
     if sort == "avg_price":
         query = query.order_by(Food.avg_price.asc())
     elif sort == "name":
         query = query.order_by(Food.name.asc())
     else:
         query = query.order_by(Food.rating.desc())
-    
+        
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()

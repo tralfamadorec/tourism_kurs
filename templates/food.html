@@ -3,51 +3,53 @@
 {% block title %}Где вкусно поесть | Ачинск туристический{% endblock %}
 
 {% block content %}
-<div class="text-center py-5 bg-primary text-white rounded mb-4">
-    <h1 class="display-4 fw-bold">🍽️ Гастрономический путеводитель</h1>
-    <p class="lead">Лучшие рестораны, кафе и закусочные Ачинска</p>
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Где вкусно поесть в Ачинске</h1>
+    <p class="text-muted">Рестораны, кафе и закусочные города</p>
 </div>
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-8">
-                <div class="row g-2">
-                    <div class="col-md-4">
-                        <label class="form-label small text-muted">Населенный пункт</label>
-                        <select id="locationFilter" class="form-select form-select-sm">
-                            <option value="">Все города</option>
-                            <option value="Ачинск">Ачинск</option>
-                            <option value="Деревня">Деревня</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-muted">Тип кухни</label>
-                        <select id="cuisineFilter" class="form-select form-select-sm">
-                            <option value="">Любая кухня</option>
-                            <option value="Русская">Русская</option>
-                            <option value="Итальянская">Итальянская</option>
-                            <option value="Азиатская">Азиатская</option>
-                            <option value="Европейская">Европейская</option>
-                            <option value="Кавказская">Кавказская</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-muted">Доступность</label>
-                        <select id="accessibilityFilter" class="form-select form-select-sm">
-                            <option value="">Любая</option>
-                            <option value="accessible">Доступно для МГН</option>
-                            <option value="parking">Есть парковка</option>
-                        </select>
-                    </div>
-                </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название или кухня...">
             </div>
             
-            <div class="col-md-4">
-                <label class="form-label small text-muted">Сортировка</label>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Тип заведения</label>
+                <select id="typeFilter" class="form-select form-select-sm">
+                    <option value="">Любой тип</option>
+                    <option value="Ресторан">Ресторан</option>
+                    <option value="Кафе">Кафе</option>
+                    <option value="Кофейня">Кофейня</option>
+                    <option value="Столовая">Столовая</option>
+                    <option value="Бар">Бар/Паб</option>
+                    <option value="Фастфуд">Фастфуд</option>
+                    <option value="Кондитерская">Кондитерская</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Доступность</label>
+                <select id="accessibilityFilter" class="form-select form-select-sm">
+                    <option value="">Любая</option>
+                    <option value="accessible">Для МГН</option>
+                    <option value="parking">Парковка</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label small text-muted d-block mb-2">Сортировка</label>
                 <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="popularity">По популярности</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="price">По цене</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="rating">По рейтингу</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="avg_price">По цене</button>
                     <button type="button" class="btn btn-outline-primary btn-sm" data-sort="name">По алфавиту</button>
                 </div>
             </div>
@@ -72,12 +74,8 @@
 {% block scripts %}
 <script>
 let currentPage = 1;
-let currentSort = 'popularity';
-let filters = {
-    location: '',
-    cuisine: '',
-    accessibility: ''
-};
+const limit = 6;
+let currentSort = 'rating';
 
 async function loadFoods(append = false) {
     const listEl = document.getElementById('foodsList');
@@ -88,27 +86,24 @@ async function loadFoods(append = false) {
     }
     
     try {
-        const params = new URLSearchParams({
-            limit: 6,
-            skip: (currentPage - 1) * 6
-        });
+        const search = document.getElementById('searchInput').value;
+        const cuisine = document.getElementById('cuisineFilter').value;
+        const accessibility = document.getElementById('accessibilityFilter').value;
         
-        if (filters.cuisine) params.append('cuisine', filters.cuisine);
-        if (filters.location) params.append('location', filters.location);
+        let url = `/api/foods/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
         
-        switch(currentSort) {
-            case 'price': params.append('sort', 'avg_price'); break;
-            case 'name': params.append('sort', 'name'); break;
-            case 'popularity': params.append('sort', 'rating'); break;
-        }
-        
-        const response = await fetch(`/api/foods/?${params}`);
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (cuisine) url += `&cuisine=${encodeURIComponent(cuisine)}`;
+        if (accessibility) url += `&accessibility=${accessibility}`;
+        url += `&sort=${currentSort}`;
+
+        const response = await fetch(url);
         const data = await response.json();
         
         if (!append) listEl.innerHTML = '';
         
         if (data.length === 0 && currentPage === 1) {
-            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">По вашему запросу ничего не найдено</p></div>';
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Заведения не найдены</p></div>';
             loadMoreBtn.classList.add('d-none');
             return;
         }
@@ -124,27 +119,28 @@ async function loadFoods(append = false) {
             
             const stars = '⭐'.repeat(Math.round(item.rating || 0));
             const accessibilityBadge = item.is_accessible ? '<span class="badge bg-success me-2">♿ Доступно</span>' : '';
+            const parkingBadge = item.has_parking ? '<span class="badge bg-info text-dark">🅿️ Парковка</span>' : '';
             
             col.innerHTML = `
                 <div class="card h-100 shadow-sm hover-shadow">
-                    ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 220px; object-fit: cover;">` : ''}
+                    ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
                     <div class="card-body">
                         <div class="mb-2">
-                            ${accessibilityBadge}
+                            ${accessibilityBadge}${parkingBadge}
                             <span class="badge bg-secondary">${item.cuisine || 'Универсальная'}</span>
                         </div>
                         <h5 class="card-title">${item.name}</h5>
-                        <p class="card-text text-muted small mb-2">${item.address || ''}</p>
-                        <p class="card-text">${item.description?.substring(0, 120)}${item.description?.length > 120 ? '...' : ''}</p>
+                        <p class="card-text small text-muted">${item.address || 'Адрес не указан'}</p>
+                        <p class="card-text small">${item.description?.substring(0, 100) || ''}${item.description?.length > 100 ? '...' : ''}</p>
                     </div>
                     <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
                             <span>Рейтинг:</span>
                             <span class="text-warning">${stars || '—'}</span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
                             <span>Средний чек:</span>
-                            <span class="fw-bold">${item.avg_price ? item.avg_price + ' ₽' : '—'}</span>
+                            <span class="fw-bold text-primary">${item.avg_price ? item.avg_price + ' ₽' : '—'}</span>
                         </li>
                     </ul>
                     <div class="card-body">
@@ -155,7 +151,7 @@ async function loadFoods(append = false) {
             listEl.appendChild(col);
         });
         
-        if (data.length === 6) {
+        if (data.length === limit) {
             loadMoreBtn.classList.remove('d-none');
         } else {
             loadMoreBtn.classList.add('d-none');
@@ -167,23 +163,9 @@ async function loadFoods(append = false) {
 }
 
 // обработчики фильтров
-document.getElementById('locationFilter').addEventListener('change', (e) => {
-    filters.location = e.target.value;
-    currentPage = 1;
-    loadFoods();
-});
-
-document.getElementById('cuisineFilter').addEventListener('change', (e) => {
-    filters.cuisine = e.target.value;
-    currentPage = 1;
-    loadFoods();
-});
-
-document.getElementById('accessibilityFilter').addEventListener('change', (e) => {
-    filters.accessibility = e.target.value;
-    currentPage = 1;
-    loadFoods();
-});
+document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadFoods(); });
+document.getElementById('cuisineFilter').addEventListener('change', () => { currentPage = 1; loadFoods(); });
+document.getElementById('accessibilityFilter').addEventListener('change', () => { currentPage = 1; loadFoods(); });
 
 // обработчики сортировки
 document.querySelectorAll('[data-sort]').forEach(btn => {
@@ -196,10 +178,24 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
+// кнопка сброса
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('cuisineFilter').value = '';
+    document.getElementById('accessibilityFilter').value = '';
+    currentSort = 'rating';
+    currentPage = 1;
+    
+    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-sort="rating"]').classList.add('active');
+    
+    loadFoods();
+});
+
 // показать еще
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
-    loadFoods(true);  // true = добавить к существующим
+    loadFoods(true);
 });
 
 // инициализация
@@ -207,11 +203,7 @@ document.addEventListener('DOMContentLoaded', () => loadFoods());
 </script>
 
 <style>
-.hover-shadow {
-    transition: box-shadow 0.3s ease;
-}
-.hover-shadow:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
+.hover-shadow { transition: box-shadow 0.3s ease; }
+.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
 </style>
 {% endblock %}

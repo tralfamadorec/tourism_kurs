@@ -99,9 +99,9 @@ def admin_routes_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/routes_form.html", {
         "request": request,
         "title": "Редактировать маршрут",
-        "back_url": "/admin/routes",  # ← добавил для единообразия
+        "back_url": "/admin/routes",
         "is_edit": True,
-        "item_id": item_id  # ← передаем ID в шаблон
+        "item_id": item_id
     })
 
 # гостиницы
@@ -254,25 +254,41 @@ def admin_postcards_edit(request: Request, item_id: int):
         "item_id": item_id
     })
 
+# конец админки
+
 # публичная часть
 @app.get("/food")
 def food_page(request: Request):
     return templates.TemplateResponse(request, "food.html", {"request": request})
 
-# заглушки для остальных страниц 
-@app.get("/attractions")
-def attractions_page(request: Request): return templates.TemplateResponse(request, "attractions.html", {"request": request})
 @app.get("/routes")
-def routes_page(request: Request): return templates.TemplateResponse(request, "routes.html", {"request": request})
-@app.get("/hotels")
-def hotels_page(request: Request): return templates.TemplateResponse(request, "hotels.html", {"request": request})
-@app.get("/food")
-def food_page(request: Request): return templates.TemplateResponse(request, "food.html", {"request": request})
+def routes_page(request: Request):
+    return templates.TemplateResponse(request, "routes.html", {"request": request})
+
+@app.get("/attractions")
+def attractions_page(request: Request): 
+    return templates.TemplateResponse(request, "attractions.html", {"request": request})
+
+@app.get("/accommodations")
+def accommodations_page(request: Request): 
+    return templates.TemplateResponse(request, "accommodations.html", {"request": request})
+
 @app.get("/events")
-def events_page(request: Request): return templates.TemplateResponse(request, "events.html", {"request": request})
+def events_page(request: Request): 
+    return templates.TemplateResponse(request, "events.html", {"request": request})
+
 @app.get("/safety")
-def safety_page(request: Request): return templates.TemplateResponse(request, "safety.html", {"request": request})
+def safety_page(request: Request): 
+    return templates.TemplateResponse(request, "safety.html", {"request": request})
+
 @app.get("/souvenirs")
-def souvenirs_page(request: Request): return templates.TemplateResponse(request, "souvenirs.html", {"request": request})
+def souvenirs_page(request: Request): 
+    return templates.TemplateResponse(request, "souvenirs.html", {"request": request})
+
 @app.get("/postcards")
-def postcards_page(request: Request): return templates.TemplateResponse(request, "postcards.html", {"request": request})
+def postcards_page(request: Request): 
+    return templates.TemplateResponse(request, "postcards.html", {"request": request})
+
+@app.get("/map")
+def map_page(request: Request):
+    return templates.TemplateResponse(request, "map.html", {"request": request})

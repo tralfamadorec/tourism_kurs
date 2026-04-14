@@ -16,6 +16,8 @@ class Attraction(Base):
     creator = relationship("User", back_populates="created_attractions")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
+    is_accessible = Column(Boolean, default=False, nullable=True)
+    rating = Column(Float, default=0.0)
     def __repr__(self):
         return f"<Attraction(id={self.id}, name='{self.name}')>"
     
@@ -45,7 +47,7 @@ class Accommodation(Base):
     photo_url = Column(String, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    is_active = Column(Boolean, default=True)  
+    is_active = Column(Boolean, default=True)
 
 class Event(Base):
     __tablename__ = "events"
@@ -57,6 +59,7 @@ class Event(Base):
     photo_url = Column(String, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    category = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True) 
 
 class Food(Base):
@@ -99,6 +102,7 @@ class Souvenir(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
+    category = Column(String(100), nullable=True) 
 
 class SafetyObject(Base):
     __tablename__ = "safety_objects"

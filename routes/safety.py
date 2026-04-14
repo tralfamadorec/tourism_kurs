@@ -13,8 +13,10 @@ router = APIRouter(prefix="/api/safety", tags=["Безопасность"])
 
 @router.get("/", response_model=List[SafetyObjectResponse])
 async def get_safety_objects(
-    category: Optional[str] = Query(None, description="Фильтр по категории"),
-    search: Optional[str] = Query(None, description="Нечеткий поиск"),
+    limit: int = Query(50, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    category: Optional[str] = Query(None, description="Категория (Полиция, МЧС...)"),
+    search: Optional[str] = Query(None, description="Поиск по названию"),
     db: AsyncSession = Depends(get_db)
 ):
     query = select(SafetyObject).where(SafetyObject.is_active == True)
@@ -24,7 +26,9 @@ async def get_safety_objects(
     if search:
         query = query.where(SafetyObject.name.ilike(f"%{search}%"))
         
-    result = await db.execute(query.order_by(SafetyObject.category, SafetyObject.name))
+    query = query.order_by(SafetyObject.category.asc(), SafetyObject.name.asc())
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 @router.get("/{safety_id}", response_model=SafetyObjectResponse)

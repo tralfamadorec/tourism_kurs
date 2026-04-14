@@ -10,35 +10,45 @@
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
-        <div class="row g-3">
+        <div class="row g-3 mb-3">
             <div class="col-md-4">
-                <label class="form-label small text-muted">Вид передвижения</label>
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название маршрута...">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Транспорт</label>
                 <select id="transportFilter" class="form-select form-select-sm">
-                    <option value="">Любой транспорт</option>
+                    <option value="">Любой</option>
                     <option value="Пешком">Пешком</option>
                     <option value="Автомобиль">Автомобиль</option>
                     <option value="Автобус">Автобус</option>
                 </select>
             </div>
-
-            <div class="col-md-4">
+            
+            <div class="col-md-3">
                 <label class="form-label small text-muted">Сложность</label>
                 <select id="difficultyFilter" class="form-select form-select-sm">
-                    <option value="">Любая сложность</option>
+                    <option value="">Любая</option>
                     <option value="Лёгкий">Лёгкий</option>
                     <option value="Средний">Средний</option>
                     <option value="Сложный">Сложный</option>
                 </select>
             </div>
-
-            <div class="col-md-4">
-                <label class="form-label small text-muted">Длительность</label>
-                <select id="durationFilter" class="form-select form-select-sm">
-                    <option value="">Любая</option>
-                    <option value="short">До 3 часов</option>
-                    <option value="medium">3-6 часов</option>
-                    <option value="long">Более 6 часов</option>
-                </select>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label small text-muted d-block mb-2">Сортировка</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="title">По названию</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="duration_asc">Сначала короткие</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="duration_desc">Сначала длинные</button>
+                </div>
             </div>
         </div>
     </div>
@@ -60,62 +70,68 @@
 
 {% block scripts %}
 <script>
-    let currentPage = 1;
-    const limit = 6;
+let currentPage = 1;
+const limit = 6;
+let currentSort = 'title';
 
-    async function loadRoutes(append = false) {
-        const listEl = document.getElementById('routesList');
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
+async function loadRoutes(append = false) {
+    const listEl = document.getElementById('routesList');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (!append) {
+        listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+    }
+    
+    try {
+        const search = document.getElementById('searchInput').value;
+        const transport = document.getElementById('transportFilter').value;
+        const difficulty = document.getElementById('difficultyFilter').value;
+        
+        let url = `/api/routes/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
+        
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (transport) url += `&transport_type=${encodeURIComponent(transport)}`;
+        if (difficulty) url += `&difficulty=${encodeURIComponent(difficulty)}`;
+        url += `&sort=${currentSort}`;
 
-        if (!append) {
-            listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!append) listEl.innerHTML = '';
+        
+        if (data.length === 0 && currentPage === 1) {
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Маршруты не найдены</p></div>';
+            loadMoreBtn.classList.add('d-none');
+            return;
         }
+        
+        if (data.length === 0) {
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        // цвета для сложности
+        const diffColors = {
+            'Лёгкий': 'success',
+            'Средний': 'warning',
+            'Сложный': 'danger'
+        };
+        
+        // иконки транспорта
+        const transportIcons = {
+            'Пешком': '🚶',
+            'Автомобиль': '🚗',
+            'Автобус': '🚌'
+        };
 
-        try {
-            const transport = document.getElementById('transportFilter').value;
-            const difficulty = document.getElementById('difficultyFilter').value;
+        data.forEach(route => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            
+            const badgeClass = diffColors[route.difficulty] || 'secondary';
+            const transportIcon = transportIcons[route.transport_type] || '🚍';
 
-            let url = `/api/routes/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
-
-            if (transport) url += `&transport_type=${encodeURIComponent(transport)}`;
-            if (difficulty) url += `&difficulty=${encodeURIComponent(difficulty)}`;
-
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (!append) listEl.innerHTML = '';
-
-            if (data.length === 0 && currentPage === 1) {
-                listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Маршруты не найдены</p></div>';
-                loadMoreBtn.classList.add('d-none');
-                return;
-            }
-
-            if (data.length === 0) {
-                loadMoreBtn.classList.add('d-none');
-                return;
-            }
-
-            // карточки
-            data.forEach(route => {
-                const col = document.createElement('div');
-                col.className = 'col-md-6 col-lg-4';
-
-                const diffColors = {
-                    'Лёгкий': 'success',
-                    'Средний': 'warning',
-                    'Сложный': 'danger'
-                };
-                const badgeClass = diffColors[route.difficulty] || 'secondary';
-
-                const transportIcons = {
-                    'Пешком': '🚶',
-                    'Автомобиль': '🚗',
-                    'Автобус': '🚌'
-                };
-                const transportIcon = transportIcons[route.transport_type] || '🚍';
-
-                col.innerHTML = `
+            col.innerHTML = `
                 <div class="card h-100 shadow-sm hover-shadow">
                     ${route.photo_url ? `<img src="${route.photo_url}" class="card-img-top" alt="${route.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
                     <div class="card-body">
@@ -137,44 +153,62 @@
                     </div>
                 </div>
             `;
-                listEl.appendChild(col);
-            });
-
-            if (data.length === limit) {
-                loadMoreBtn.classList.remove('d-none');
-            } else {
-                loadMoreBtn.classList.add('d-none');
-            }
-
-        } catch (err) {
-            listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
-        }
-    }
-
-    // обработчики фильтров
-    ['transportFilter', 'difficultyFilter', 'durationFilter'].forEach(id => {
-        document.getElementById(id).addEventListener('change', () => {
-            currentPage = 1; // Сброс на первую страницу при фильтре
-            loadRoutes();
+            listEl.appendChild(col);
         });
-    });
+        
+        if (data.length === limit) {
+            loadMoreBtn.classList.remove('d-none');
+        } else {
+            loadMoreBtn.classList.add('d-none');
+        }
+        
+    } catch (err) {
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+    }
+}
 
-    document.getElementById('loadMoreBtn').addEventListener('click', () => {
-        currentPage++;
-        loadRoutes(true);
-    });
+// обработчики фильтров
+document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadRoutes(); });
+document.getElementById('transportFilter').addEventListener('change', () => { currentPage = 1; loadRoutes(); });
+document.getElementById('difficultyFilter').addEventListener('change', () => { currentPage = 1; loadRoutes(); });
 
-    // инициализация
-    document.addEventListener('DOMContentLoaded', () => loadRoutes());
+// обработчики сортировки
+document.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentSort = e.target.dataset.sort;
+        currentPage = 1;
+        loadRoutes();
+    });
+});
+
+// кнопка сброса
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('transportFilter').value = '';
+    document.getElementById('difficultyFilter').value = '';
+    currentSort = 'title';
+    currentPage = 1;
+    
+    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-sort="title"]').classList.add('active');
+    
+    loadRoutes();
+});
+
+// показать еще
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    currentPage++;
+    loadRoutes(true);
+});
+
+// инициализация
+document.addEventListener('DOMContentLoaded', () => loadRoutes());
 </script>
 
 <style>
-    .hover-shadow {
-        transition: box-shadow 0.3s ease;
-    }
-
-    .hover-shadow:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-    }
+.hover-shadow { transition: box-shadow 0.3s ease; }
+.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
 </style>
 {% endblock %}
