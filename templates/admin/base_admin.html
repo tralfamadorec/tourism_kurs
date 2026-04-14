@@ -10,17 +10,18 @@
             <a href="/admin/attractions" class="list-group-item list-group-item-action">Места</a>
             <a href="/admin/routes" class="list-group-item list-group-item-action">Маршруты</a>
             <a href="/admin/hotels" class="list-group-item list-group-item-action">Гостиницы</a>
-            <a href="/admin/food" class="list-group-item list-group-item-action">Питание</a>
+            <a href="/admin/foods" class="list-group-item list-group-item-action">Питание</a>
             <a href="/admin/events" class="list-group-item list-group-item-action">События</a>
             <a href="/admin/souvenirs" class="list-group-item list-group-item-action">Сувениры</a>
             <a href="/admin/safety" class="list-group-item list-group-item-action">Безопасность</a>
             <a href="/admin/postcards" class="list-group-item list-group-item-action">Открытки</a>
             <hr>
             <a href="/" class="list-group-item list-group-item-action text-muted">← На сайт</a>
-            <a href="#" onclick="logout(); return false;" class="list-group-item list-group-item-action text-danger">Выйти</a>
+            <a href="#" onclick="logout(); return false;"
+                class="list-group-item list-group-item-action text-danger">Выйти</a>
         </div>
     </div>
-    
+
     <div class="col-md-9 col-lg-10">
         {% block admin_content %}{% endblock %}
     </div>
@@ -30,10 +31,10 @@
 {% block scripts %}
 {{ super() }}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    if (!isAuthenticated()) {
-        window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
-    }
-});
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!isAuthenticated()) {
+            window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+        }
+    });
 </script>
 {% endblock %}

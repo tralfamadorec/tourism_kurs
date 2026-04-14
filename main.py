@@ -130,11 +130,11 @@ def admin_hotels_edit(request: Request, item_id: int):
     })
 
 # рестораны
-@app.get("/admin/food")
+@app.get("/admin/foods")
 def admin_food_list(request: Request):
     return templates.TemplateResponse(request, "admin/foods_list.html", {"request": request})
 
-@app.get("/admin/food/new")
+@app.get("/admin/foods/new")
 def admin_food_new(request: Request):
     return templates.TemplateResponse(request, "admin/foods_form.html", {
         "request": request,
@@ -144,8 +144,8 @@ def admin_food_new(request: Request):
         "item_id": None
     })
 
-@app.get("/admin/food/{item_id}/edit")
-def admin_food_edit(request: Request, item_id: int):
+@app.get("/admin/foods/{item_id}/edit")
+async def admin_food_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/foods_form.html", {
         "request": request,
         "title": "Редактировать заведение",

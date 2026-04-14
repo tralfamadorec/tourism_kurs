@@ -70,9 +70,9 @@ class Food(Base):
     address = Column(String(255), nullable=True)
     phone = Column(String(20), nullable=True)
     website = Column(String(255), nullable=True)
-    cuisine = Column(String(100), nullable=True)  # Тип кухни
-    avg_price = Column(Integer, nullable=True)    # Средний чек (руб)
-    rating = Column(Float, nullable=True)         # Рейтинг 1-5
+    cuisine = Column(String(100), nullable=True)
+    avg_price = Column(Integer, nullable=True)
+    rating = Column(Float, nullable=True)
     photo_url = Column(String, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
