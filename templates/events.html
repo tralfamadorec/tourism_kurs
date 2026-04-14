@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}События и мероприятия в Ачинске{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>События в Ачинске</h1>
+    <p class="text-muted">Афиша мероприятий, концертов и праздников</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Когда</label>
+                <select id="dateFilter" class="form-select form-select-sm">
+                    <option value="">Все события</option>
+                    <option value="today">Сегодня</option>
+                    <option value="tomorrow">Завтра</option>
+                    <option value="week">На этой неделе</option>
+                    <option value="month">В этом месяце</option>
+                </select>
+            </div>
+            
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Категория</label>
+                <select id="categoryFilter" class="form-select form-select-sm">
+                    <option value="">Все категории</option>
+                    <option value="Концерт">Концерт</option>
+                    <option value="Выставка">Выставка</option>
+                    <option value="Фестиваль">Фестиваль</option>
+                    <option value="Спорт">Спорт</option>
+                    <option value="Детям">Детям</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Сортировка</label>
+                <select id="sortFilter" class="form-select form-select-sm">
+                    <option value="date_asc">Сначала ближайшие</option>
+                    <option value="date_desc">Сначала поздние</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="eventsList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка событий...</p>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4">
+    <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
+        Показать еще
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+const limit = 6;
+
+async function loadEvents(append = false) {
+    const listEl = document.getElementById('eventsList');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (!append) {
+        listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+    }
+    
+    try {
+        const dateFilter = document.getElementById('dateFilter').value;
+        const category = document.getElementById('categoryFilter').value;
+        const sort = document.getElementById('sortFilter').value;
+        
+        let url = `/api/events/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
+        
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+        if (sort) url += `&sort=${sort}`;
+        if (dateFilter) url += `&date_filter=${dateFilter}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!append) listEl.innerHTML = '';
+        
+        if (data.length === 0 && currentPage === 1) {
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Событий пока нет</p></div>';
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        if (data.length === 0) {
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        data.forEach(event => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            
+            // форматируем дату
+            const eventDate = event.event_date ? new Date(event.event_date) : null;
+            const dateStr = eventDate ? eventDate.toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'Дата не указана';
+            
+            // иконки категорий
+            const categoryIcons = {
+                'Концерт': '🎵',
+                'Выставка': '🎨',
+                'Фестиваль': '🎪',
+                'Спорт': '⚽',
+                'Детям': '🎈'
+            };
+            const icon = categoryIcons[event.category] || '📅';
+
+            col.innerHTML = `
+                <div class="card h-100 shadow-sm hover-shadow">
+                    ${event.photo_url ? `<img src="${event.photo_url}" class="card-img-top" alt="${event.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="badge bg-primary">${icon} ${event.category || 'Событие'}</span>
+                            <small class="text-muted">${dateStr}</small>
+                        </div>
+                        <h5 class="card-title">${event.title}</h5>
+                        <p class="card-text small">${event.description?.substring(0, 100) || ''}${event.description?.length > 100 ? '...' : ''}</p>
+                        ${event.location ? `<p class="card-text small text-muted">📍 ${event.location}</p>` : ''}
+                    </div>
+                    <div class="card-body">
+                        <a href="/events/${event.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
+                    </div>
+                </div>
+            `;
+            listEl.appendChild(col);
+        });
+        
+        if (data.length === limit) {
+            loadMoreBtn.classList.remove('d-none');
+        } else {
+            loadMoreBtn.classList.add('d-none');
+        }
+        
+    } catch (err) {
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+    }
+}
+
+// обработчики
+document.getElementById('dateFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
+document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
+document.getElementById('sortFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
+
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    currentPage++;
+    loadEvents(true);
+});
+
+document.addEventListener('DOMContentLoaded', () => loadEvents());
+</script>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Карта туриста | Ачинск{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Показать на карте</label>
+                <select id="typeFilter" class="form-select form-select-sm">
+                    <option value="all">Все объекты</option>
+                    <option value="attraction">Достопримечательности</option>
+                    <option value="hotel">Гостиницы</option>
+                    <option value="food">Рестораны</option>
+                    <option value="safety">Безопасность</option>
+                </select>
+            </div>
+            <div class="col-md-9 text-end">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnAttraction">Достопримеч.</button>
+                    <button type="button" class="btn btn-outline-success btn-sm" id="btnHotel">Гостиницы</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" id="btnFood">Рестораны</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="btnSafety">Службы</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="map" style="height: calc(100vh - 250px); border-radius: 8px;"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://api-maps.yandex.ru/2.1/?apikey=aef84873-3320-4b26-a718-627fa9bec3c6&lang=ru_RU" type="text/javascript"></script>
+
+<script>
+let myMap;
+let objectCollection;
+let allObjects = [];
+
+// инициализация карты
+ymaps.ready(init);
+
+function init() {
+    // создание карты
+    myMap = new ymaps.Map("map", {
+        center: [56.2659, 90.4969],
+        zoom: 13,
+        controls: ['zoomControl', 'fullscreenControl', 'typeSelector']
+    });
+
+    // создаем коллекцию для объектов
+    objectCollection = new ymaps.GeoObjectCollection({}, {
+        preset: 'islands#blueCircleIcon',
+        balloonMaxWidth: 300
+    });
+
+    myMap.geoObjects.add(objectCollection);
+
+    // загружаем данные
+    loadMapData();
+}
+
+// загрузка данных со всех API
+async function loadMapData() {
+    const apis = [
+        { type: 'attraction', url: '/api/attractions/?limit=100', preset: 'islands#blueCircleIcon', name: 'Достопримечательности' },
+        { type: 'hotel', url: '/api/accommodations/?limit=100', preset: 'islands#greenCircleIcon', name: 'Гостиницы' },
+        { type: 'food', url: '/api/foods/?limit=100', preset: 'islands#orangeCircleIcon', name: 'Рестораны' },
+        { type: 'safety', url: '/api/safety/?limit=100', preset: 'islands#redCircleIcon', name: 'Безопасность' }
+    ];
+
+    try {
+        const results = await Promise.allSettled(apis.map(async (api) => {
+            try {
+                const response = await fetch(api.url);
+                const data = await response.json();
+                return data.map(obj => ({ ...obj, objType: api.type, preset: api.preset }));
+            } catch (e) {
+                console.warn(`Ошибка загрузки ${api.type}:`, e);
+                return [];
+            }
+        }));
+
+        allObjects = results
+            .filter(r => r.status === 'fulfilled')
+            .flatMap(r => r.value);
+
+        renderMarkers(allObjects);
+    } catch (err) {
+        console.error('Ошибка загрузки данных карты:', err);
+    }
+}
+
+// отрисовка маркеров
+function renderMarkers(objects) {
+    objectCollection.removeAll();
+
+    objects.forEach(obj => {
+        if (!obj.latitude || !obj.longitude) return;
+
+        // создаем метку
+        const placemark = new ymaps.Placemark(
+            [obj.latitude, obj.longitude],
+            {
+                balloonContentHeader: obj.name,
+                balloonContentBody: `
+                    <div style="max-width: 250px;">
+                        <p>${obj.description?.substring(0, 150) || 'Описание отсутствует'}</p>
+                        ${obj.address ? `<p><strong>Адрес:</strong> ${obj.address}</p>` : ''}
+                        ${obj.phone ? `<p><strong>Телефон:</strong> ${obj.phone}</p>` : ''}
+                    </div>
+                `,
+                hintContent: obj.name
+            },
+            { 
+                preset: obj.preset || 'islands#blueCircleIcon',
+                balloonMaxWidth: 300
+            }
+        );
+
+        objectCollection.add(placemark);
+    });
+
+    // масштабируем карту чтобы показать все объекты
+    if (objectCollection.getLength() > 0) {
+        myMap.setBounds(objectCollection.getBounds(), {
+            checkZoomRange: true,
+            zoomMargin: 50
+        });
+    }
+}
+
+// фильтрация
+function filterMap(type) {
+    if (type === 'all') {
+        renderMarkers(allObjects);
+    } else {
+        const filtered = allObjects.filter(obj => obj.objType === type);
+        renderMarkers(filtered);
+    }
+}
+
+// обработчики кнопок
+document.getElementById('btnAttraction').addEventListener('click', () => filterMap('attraction'));
+document.getElementById('btnHotel').addEventListener('click', () => filterMap('hotel'));
+document.getElementById('btnFood').addEventListener('click', () => filterMap('food'));
+document.getElementById('btnSafety').addEventListener('click', () => filterMap('safety'));
+document.getElementById('typeFilter').addEventListener('change', (e) => filterMap(e.target.value));
+</script>
+{% endblock %}

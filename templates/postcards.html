@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Создать открытку из Ачинска{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Открытки из Ачинска</h1>
+    <p class="text-muted">Создайте цифровую открытку с видами города для друзей и близких</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Настройка открытки</h5>
+            </div>
+            <div class="card-body">
+                <form id="postcardForm">
+                    <div class="mb-3">
+                        <label class="form-label">Выберите шаблон</label>
+                        <select id="templateSelect" class="form-select" required>
+                            <option value="" disabled selected>Загрузка шаблонов...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Кому (имя)</label>
+                        <input type="text" id="recipientInput" class="form-control" placeholder="Например: Любимой маме" maxlength="50">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Текст поздравления</label>
+                        <textarea id="messageInput" class="form-control" rows="5" placeholder="Пишите добрые слова..." maxlength="300" required></textarea>
+                        <div class="form-text text-end"><span id="charCount">0</span>/300</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="button" id="generateBtn" class="btn btn-primary btn-lg">✨ Сгенерировать открытку</button>
+                        <button type="button" id="downloadBtn" class="btn btn-success btn-lg d-none">⬇️ Скачать (PNG)</button>
+                    </div>
+                    
+                    <div id="errorMsg" class="alert alert-danger mt-3 d-none" role="alert"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Предпросмотр</h5>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center bg-light" style="min-height: 400px;">
+                
+                <div id="previewContainer" class="text-center p-5">
+                    <p class="text-muted">Выберите шаблон и введите текст, чтобы увидеть результат</p>
+                </div>
+
+                <canvas id="postcardCanvas" style="display:none;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// глобальные переменные
+let templatesData = [];
+let currentTemplate = null;
+
+// инициализация
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadTemplates();
+    setupEventListeners();
+});
+
+// загрузка шаблонов с сервера
+async function loadTemplates() {
+    try {
+        const response = await fetch('/api/postcards/');
+        templatesData = await response.json();
+        
+        const select = document.getElementById('templateSelect');
+        select.innerHTML = '<option value="" disabled selected>Выберите шаблон...</option>';
+        
+        templatesData.forEach(tpl => {
+            const option = document.createElement('option');
+            option.value = tpl.id;
+            option.textContent = tpl.title;
+            select.appendChild(option);
+        });
+    } catch (err) {
+        console.error('Ошибка загрузки шаблонов:', err);
+        document.getElementById('templateSelect').innerHTML = '<option>Ошибка загрузки</option>';
+    }
+}
+
+function setupEventListeners() {
+    // счетчик символов
+    const msgInput = document.getElementById('messageInput');
+    const charCount = document.getElementById('charCount');
+    msgInput.addEventListener('input', () => {
+        charCount.textContent = msgInput.value.length;
+        updatePreview();
+    });
+
+    // смена шаблона
+    document.getElementById('templateSelect').addEventListener('change', (e) => {
+        const id = parseInt(e.target.value);
+        currentTemplate = templatesData.find(t => t.id === id);
+        updatePreview();
+    });
+
+    // генерация
+    document.getElementById('generateBtn').addEventListener('click', generatePostcard);
+    
+    // скачивание
+    document.getElementById('downloadBtn').addEventListener('click', downloadPostcard);
+}
+
+// функция обновления превью (просто показывает картинку + текст поверх для наглядности)
+function updatePreview() {
+    const container = document.getElementById('previewContainer');
+    const msg = document.getElementById('messageInput').value;
+    
+    if (!currentTemplate) return;
+
+    container.innerHTML = `
+        <div class="position-relative d-inline-block">
+            <img src="${currentTemplate.image_url}" class="img-fluid rounded shadow" style="max-height: 400px;" alt="Шаблон">
+            ${msg ? `
+                <div class="position-absolute bottom-0 start-0 w-100 p-3 bg-dark bg-opacity-75 text-white rounded-bottom">
+                    <small class="d-block text-warning mb-1">Получатель: ${document.getElementById('recipientInput').value || '...'}</small>
+                    <p class="mb-0 small text-truncate">${msg}</p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// основная логика генерации на Canvas
+async function generatePostcard() {
+    const btn = document.getElementById('generateBtn');
+    const errorDiv = document.getElementById('errorMsg');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    const templateId = document.getElementById('templateSelect').value;
+    const message = document.getElementById('messageInput').value;
+    const recipient = document.getElementById('recipientInput').value;
+
+    if (!templateId || !message) {
+        errorDiv.textContent = 'Пожалуйста, выберите шаблон и введите текст.';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+
+    errorDiv.classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Создаем...';
+
+    try {
+        // 1 загружаем изображение шаблона
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; 
+        img.src = currentTemplate.image_url;
+        
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+        });
+
+        // 2 рисуем на Canvas
+        const canvas = document.getElementById('postcardCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // устанавливаем размер canvas как у картинки (или фиксированный)
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // рисуем фон
+        ctx.drawImage(img, 0, 0);
+
+        // настройки текста
+        ctx.fillStyle = 'white';
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 5;
+        ctx.font = 'bold 40px Arial';
+        ctx.textAlign = 'center';
+        
+        // рисуем имя получателя
+        if (recipient) {
+            ctx.font = 'bold 30px Arial';
+            ctx.fillText(recipient, canvas.width / 2, canvas.height - 150);
+        }
+
+        // рисуем текст поздравления
+        ctx.font = '24px Arial';
+        const maxWidth = canvas.width - 100;
+        const lineHeight = 30;
+        const x = canvas.width / 2;
+        let y = canvas.height - 100;
+        
+        const words = message.split(' ');
+        let line = '';
+        // простой алгоритм переноса (мб улучшить)
+        ctx.fillText(message, x, y); 
+
+        // 3 показываем результат
+        const previewContainer = document.getElementById('previewContainer');
+        previewContainer.innerHTML = `
+            <img src="${canvas.toDataURL()}" class="img-fluid rounded shadow" style="max-height: 500px;">
+            <p class="mt-2 text-success fw-bold">✨ Открытка готова!</p>
+        `;
+        
+        downloadBtn.classList.remove('d-none');
+
+    } catch (err) {
+        console.error(err);
+        errorDiv.textContent = 'Ошибка генерации. Проверьте консоль.';
+        errorDiv.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✨ Сгенерировать открытку';
+    }
+}
+
+function downloadPostcard() {
+    const canvas = document.getElementById('postcardCanvas');
+    const link = document.createElement('a');
+    link.download = 'achinsk_postcard.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
+</script>
+{% endblock %}

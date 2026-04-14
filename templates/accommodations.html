@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Гостиницы и отели Ачинска{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Где остановиться в Ачинске</h1>
+    <p class="text-muted">Гостиницы, хостелы и апартаменты</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Цена за ночь</label>
+                <select id="priceFilter" class="form-select form-select-sm">
+                    <option value="">Любая цена</option>
+                    <option value="2000">До 2000 ₽</option>
+                    <option value="4000">До 4000 ₽</option>
+                    <option value="6000">До 6000 ₽</option>
+                </select>
+            </div>
+            
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Рейтинг</label>
+                <select id="ratingFilter" class="form-select form-select-sm">
+                    <option value="">Любой рейтинг</option>
+                    <option value="4">4.0 и выше</option>
+                    <option value="3">3.0 и выше</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Сортировка</label>
+                <select id="sortFilter" class="form-select form-select-sm">
+                    <option value="rating">По рейтингу</option>
+                    <option value="price_asc">Сначала дешевые</option>
+                    <option value="price_desc">Сначала дорогие</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="hotelsList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка вариантов...</p>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4">
+    <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
+        Показать еще
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+const limit = 6;
+
+async function loadHotels(append = false) {
+    const listEl = document.getElementById('hotelsList');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (!append) {
+        listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+    }
+    
+    try {
+        const maxPrice = document.getElementById('priceFilter').value;
+        const minRating = document.getElementById('ratingFilter').value;
+        const sort = document.getElementById('sortFilter').value;
+        
+        let url = `/api/accommodations/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
+        
+        if (maxPrice) url += `&max_price=${maxPrice}`;
+        if (minRating) url += `&min_rating=${minRating}`;
+        if (sort) url += `&sort=${sort}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!append) listEl.innerHTML = '';
+        
+        if (data.length === 0 && currentPage === 1) {
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Варианты размещения не найдены</p></div>';
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        if (data.length === 0) {
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        data.forEach(hotel => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            
+            // звезды
+            const stars = '⭐'.repeat(Math.round(hotel.rating || 0));
+            
+            col.innerHTML = `
+                <div class="card h-100 shadow-sm hover-shadow">
+                    ${hotel.photo_url ? `<img src="${hotel.photo_url}" class="card-img-top" alt="${hotel.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    <div class="card-body">
+                        <h5 class="card-title">${hotel.name}</h5>
+                        <p class="card-text small text-muted">${hotel.address || 'Адрес не указан'}</p>
+                        <p class="card-text small">${hotel.description?.substring(0, 80) || ''}${hotel.description?.length > 80 ? '...' : ''}</p>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Рейтинг:</span>
+                            <span class="text-warning">${stars || '—'}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Цена:</span>
+                            <span class="fw-bold text-primary">${hotel.price_per_night ? hotel.price_per_night + ' ₽/ночь' : 'Цена по запросу'}</span>
+                        </li>
+                    </ul>
+                    <div class="card-body">
+                        <a href="/hotels/${hotel.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
+                    </div>
+                </div>
+            `;
+            listEl.appendChild(col);
+        });
+        
+        if (data.length === limit) {
+            loadMoreBtn.classList.remove('d-none');
+        } else {
+            loadMoreBtn.classList.add('d-none');
+        }
+        
+    } catch (err) {
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+    }
+}
+
+// обработчики
+document.getElementById('priceFilter').addEventListener('change', () => { currentPage = 1; loadHotels(); });
+document.getElementById('ratingFilter').addEventListener('change', () => { currentPage = 1; loadHotels(); });
+document.getElementById('sortFilter').addEventListener('change', () => { currentPage = 1; loadHotels(); });
+
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    currentPage++;
+    loadHotels(true);
+});
+
+document.addEventListener('DOMContentLoaded', () => loadHotels());
+</script>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}
