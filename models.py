@@ -16,6 +16,7 @@ class Accommodation(Base):
     rating = Column(Float, nullable=True)
     price_per_night = Column(Integer, nullable=True)
     photo_url = Column(String, nullable=True)
+    is_accessible = Column(Boolean, default=False, nullable=True)  # ← ДОБАВЛЕНО
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
@@ -43,9 +44,10 @@ class Event(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    event_date = Column(DateTime(timezone=True), nullable=False, index=True)  # ← Индекс для фильтрации
+    event_date = Column(DateTime(timezone=True), nullable=False, index=True)
     location = Column(String(255), nullable=True)
     photo_url = Column(String, nullable=True)
+    is_accessible = Column(Boolean, default=False, nullable=True)  # ← ДОБАВЛЕНО
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     category = Column(String(100), nullable=True)
@@ -63,6 +65,7 @@ class Food(Base):
     avg_price = Column(Integer, nullable=True)
     rating = Column(Float, nullable=True)
     photo_url = Column(String, nullable=True)
+    is_accessible = Column(Boolean, default=False, nullable=True)  # ← ДОБАВЛЕНО
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
@@ -86,6 +89,7 @@ class Route(Base):
     difficulty = Column(String(50), nullable=True)
     transport_type = Column(String(50), nullable=True)
     photo_url = Column(String, nullable=True)
+    is_accessible = Column(Boolean, default=False, nullable=True)  # ← ДОБАВЛЕНО
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)

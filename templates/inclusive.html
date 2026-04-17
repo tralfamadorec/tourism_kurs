@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Инклюзивный туризм | Ачинск{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Инклюзивный туризм в Ачинске</h1>
+    <p class="text-muted">Объекты, доступные для маломобильных групп населения</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <label class="form-label small text-muted">Тип объекта</label>
+        <select id="typeFilter" class="form-select form-select-sm" onchange="filterObjects()">
+            <option value="all">Все типы</option>
+            <option value="attraction">Достопримечательности</option>
+            <option value="accommodation">Гостиницы</option>
+            <option value="food">Питание</option>
+            <option value="event">События</option>
+            <option value="safety">Безопасность</option>
+        </select>
+    </div>
+</div>
+
+<div id="inclusiveList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка доступных объектов...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allAccessibleObjects = [];
+
+async function loadAccessibleObjects() {
+    const endpoints = {
+        attraction: '/api/attractions/?limit=100&accessibility=accessible',
+        accommodation: '/api/accommodations/?limit=100',
+        food: '/api/foods/?limit=100&accessibility=accessible',
+        event: '/api/events/?limit=100'
+    };
+
+    const results = [];
+    
+    for (const [type, url] of Object.entries(endpoints)) {
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            const accessible = data.filter(obj => obj.is_accessible === true);
+            results.push(...accessible.map(obj => ({...obj, objType: type})));
+        } catch (e) {
+            console.warn(`Ошибка загрузки ${type}:`, e);
+        }
+    }
+    
+    allAccessibleObjects = results;
+    renderObjects(allAccessibleObjects);
+}
+
+function renderObjects(objects) {
+    const container = document.getElementById('inclusiveList');
+    container.innerHTML = '';
+    
+    if (objects.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Доступных объектов пока нет</p></div>';
+        return;
+    }
+    
+    objects.forEach(obj => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4';
+        
+        const typeLabels = {
+            attraction: 'Достопримечательность',
+            accommodation: 'Проживание',
+            food: 'Питание',
+            event: 'Событие'
+        };
+        
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <span class="badge bg-success mb-2">Доступно для МГН</span>
+                    <span class="badge bg-secondary mb-2">${typeLabels[obj.objType] || 'Объект'}</span>
+                    <h5 class="card-title">${obj.name || obj.title}</h5>
+                    <p class="card-text small text-muted">${obj.address || obj.location || 'Адрес не указан'}</p>
+                    <p class="card-text small">${(obj.description || '').substring(0, 100)}${obj.description?.length > 100 ? '...' : ''}</p>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="/${obj.objType === 'accommodation' ? 'hotels' : obj.objType === 'food' ? 'food' : obj.objType + 's'}/${obj.id}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                </div>
+            </div>
+        `;
+        container.appendChild(col);
+    });
+}
+
+function filterObjects() {
+    const type = document.getElementById('typeFilter').value;
+    if (type === 'all') {
+        renderObjects(allAccessibleObjects);
+    } else {
+        const filtered = allAccessibleObjects.filter(obj => obj.objType === type);
+        renderObjects(filtered);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadAccessibleObjects);
+</script>
+{% endblock %}

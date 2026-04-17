@@ -296,3 +296,7 @@ def map_page(request: Request):
 @app.get("/contacts")
 def contacts_page(request: Request):
     return templates.TemplateResponse(request, "contacts.html", {"request": request})
+
+@app.get("/inclusive")
+def inclusive_page(request: Request):
+    return templates.TemplateResponse(request, "inclusive.html", {"request": request})

@@ -22,7 +22,7 @@ TEST_DATA = {
         {"name": "Городской фонтан", "address": "г. Ачинск, пр. Мира", "description": "Центральная достопримечательность с вечерней подсветкой", "latitude": 56.2665, "longitude": 90.4975, "is_accessible": True},
     ],
     "accommodations": [
-        {"name": "Гостиница «Ачинск»", "address": "г. Ачинск, ул. Советская, 15", "description": "Центральная гостиница города", "price_per_night": 2500, "rating": 4.2, "latitude": 56.2680, "longitude": 90.4990},
+        {"name": "Гостиный двор", "address": "г. Ачинск, ул. Красноярская, 25", "description": "Центральная гостиница города", "price_per_night": 2500, "rating": 4.2, "latitude": 56.2680, "longitude": 90.4990},
         {"name": "Мини-отель «Уют»", "address": "г. Ачинск, пер. Больничный, 3", "description": "Тихий отель в спальном районе", "price_per_night": 1800, "rating": 3.8, "latitude": 56.2620, "longitude": 90.4850},
         {"name": "Хостел «Путник»", "address": "г. Ачинск, ул. Железнодорожная, 10", "description": "Бюджетное размещение рядом с вокзалом", "price_per_night": 900, "rating": 3.5, "latitude": 56.2710, "longitude": 90.5100},
         {"name": "Апартаменты «Дом на Мира»", "address": "г. Ачинск, пр. Мира, 45", "description": "Квартиры посуточно с кухней", "price_per_night": 2200, "rating": 4.5, "latitude": 56.2690, "longitude": 90.5020},

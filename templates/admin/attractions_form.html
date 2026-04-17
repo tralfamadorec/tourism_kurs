@@ -83,6 +83,7 @@ if (isEdit && itemId) {
 
 async function loadAttractionData(id) {
     try {
+        
         const data = await apiRequest(`/api/attractions/${id}`);
         
         document.getElementById('name').value = data.name || '';
@@ -90,6 +91,7 @@ async function loadAttractionData(id) {
         document.getElementById('address').value = data.address || '';
         document.getElementById('latitude').value = data.latitude || '';
         document.getElementById('longitude').value = data.longitude || '';
+        document.getElementById('is_accessible').checked = !!data.is_accessible;
         document.getElementById('photo_url').value = data.photo_url || '';
         
         document.getElementById('rating').value = data.rating !== undefined ? data.rating : 0.0;
@@ -110,13 +112,13 @@ form.addEventListener('submit', async (e) => {
     successDiv.classList.add('d-none');
 
     const data = {};
-    new FormData(form).forEach((value, key) => {
-        if (key === 'is_accessible') {
-            data[key] = value === 'on';
-        } else if (value) {
-            data[key] = value;
-        }
-    });
+        new FormData(form).forEach((value, key) => {
+            if (key === 'is_accessible') {
+                data[key] = value === 'on';
+            } else if (value) {
+                data[key] = value;
+            }
+        });
     
     // преобразуем числа
     if (data.latitude) data.latitude = parseFloat(data.latitude);

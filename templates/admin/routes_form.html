@@ -46,6 +46,15 @@
                 </div>
             </div>
 
+            <div class="col-md-6 mb-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
+                    <label class="form-check-label" for="is_accessible">
+                        Доступно для маломобильных групп (МГН)
+                    </label>
+                </div>
+            </div>
+
             <div class="mb-3">
                 <label for="photo_url" class="form-label">Ссылка на фото</label>
                 <input type="url" class="form-control" id="photo_url" name="photo_url" placeholder="/static/images/...">
@@ -83,6 +92,7 @@ async function loadRouteData(id) {
         document.getElementById('duration_hours').value = data.duration_hours || '';
         document.getElementById('difficulty').value = data.difficulty || '';
         document.getElementById('transport_type').value = data.transport_type || '';
+        document.getElementById('is_accessible').checked = !!data.is_accessible;
         document.getElementById('photo_url').value = data.photo_url || '';
         
     } catch (err) {
@@ -100,9 +110,13 @@ form.addEventListener('submit', async (e) => {
     successDiv.classList.add('d-none');
 
     const data = {};
-    new FormData(form).forEach((value, key) => {
-        if (value) data[key] = value;
-    });
+        new FormData(form).forEach((value, key) => {
+            if (key === 'is_accessible') {
+                data[key] = value === 'on';
+            } else if (value) {
+                data[key] = value;
+            }
+        });
     
     if (data.duration_hours) data.duration_hours = parseFloat(data.duration_hours);
 

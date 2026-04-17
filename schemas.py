@@ -14,6 +14,7 @@ class AccommodationBase(BaseModel):
     longitude: Optional[float] = Field(None, ge=-180, le=180)
     rating: Optional[float] = Field(None, ge=0, le=5)
     price_per_night: Optional[int] = Field(None, ge=0)
+    is_accessible: Optional[bool] = False 
     photo_url: Optional[str] = None
 
 class AccommodationCreate(AccommodationBase): 
@@ -35,6 +36,7 @@ class AttractionBase(BaseModel):
     address: Optional[str] = Field(None, description="Физический адрес")
     latitude: Optional[float] = Field(None, ge=-90, le=90, description="Широта (WGS84)")
     longitude: Optional[float] = Field(None, ge=-180, le=180, description="Долгота (WGS84)")
+    is_accessible: Optional[bool] = False 
     photo_url: Optional[str] = Field(None, description="Ссылка на изображение")
 
 class AttractionCreate(AttractionBase):
@@ -60,6 +62,7 @@ class EventBase(BaseModel):
     description: Optional[str] = None
     event_date: datetime
     location: Optional[str] = None
+    is_accessible: Optional[bool] = False 
     photo_url: Optional[str] = None
 
 class EventCreate(EventBase): 
@@ -88,6 +91,7 @@ class FoodBase(BaseModel):
     photo_url: Optional[str] = None
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
+    is_accessible: Optional[bool] = False 
 
 class FoodCreate(FoodBase): 
     pass
@@ -126,6 +130,7 @@ class RouteBase(BaseModel):
     duration_hours: Optional[float] = Field(None, ge=0.5)
     difficulty: Optional[str] = Field(None, max_length=50)
     transport_type: Optional[str] = Field(None, max_length=50)
+    is_accessible: Optional[bool] = False 
     photo_url: Optional[str] = None
 
 class RouteCreate(RouteBase): 
