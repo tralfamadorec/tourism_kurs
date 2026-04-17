@@ -1,10 +1,14 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
 import httpx
 from fastapi import HTTPException
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from database import Base, get_db, engine
 
 from routes import attractions, auth, accommodations, events, foods, souvenirs, safety, postcards
 from routes import routes as routes_router
@@ -300,3 +304,123 @@ def contacts_page(request: Request):
 @app.get("/inclusive")
 def inclusive_page(request: Request):
     return templates.TemplateResponse(request, "inclusive.html", {"request": request})
+
+# детальные страницы объектов
+from models import Attraction, Accommodation, Food, Event, Route, SafetyObject, Souvenir
+from fastapi import HTTPException
+
+# ================= ДЕТАЛЬНЫЕ СТРАНИЦЫ ОБЪЕКТОВ =================
+
+@app.get("/attractions/{item_id}")
+async def attraction_detail(request: Request, item_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Attraction).where(Attraction.id == item_id))
+    item = result.scalar_one_or_none()
+    if not item: raise HTTPException(404, "Объект не найден")
+    return templates.TemplateResponse(request, "object_detail.html", {
+        "request": request, "item": item, "title": item.name, "back_url": "/attractions",
+        "details": [
+            ("Адрес", item.address),
+            ("Рейтинг", f"{item.rating} из 5" if item.rating else None),
+            ("Доступно для МГН", "Да" if item.is_accessible else None)
+        ],
+        "description": item.description, "photo": item.photo_url
+    })
+
+@app.get("/hotels/{item_id}")
+async def hotel_detail(request: Request, item_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Accommodation).where(Accommodation.id == item_id))
+    item = result.scalar_one_or_none()
+    if not item: raise HTTPException(404, "Гостиница не найдена")
+    return templates.TemplateResponse(request, "object_detail.html", {
+        "request": request, "item": item, "title": item.name, "back_url": "/accommodations",
+        "details": [
+            ("Адрес", item.address),
+            ("Телефон", item.phone),
+            ("Сайт", item.website),
+            ("Цена за ночь", f"{item.price_per_night} ₽" if item.price_per_night else None),
+            ("Рейтинг", f"{item.rating} из 5" if item.rating else None),
+            ("Доступно для МГН", "Да" if item.is_accessible else None)
+        ],
+        "description": item.description, "photo": item.photo_url
+    })
+
+@app.get("/food/{item_id}")
+async def food_detail(request: Request, item_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Food).where(Food.id == item_id))
+    item = result.scalar_one_or_none()
+    if not item: raise HTTPException(404, "Заведение не найдено")
+    return templates.TemplateResponse(request, "object_detail.html", {
+        "request": request, "item": item, "title": item.name, "back_url": "/food",
+        "details": [
+            ("Адрес", item.address),
+            ("Телефон", item.phone),
+            ("Кухня", item.cuisine),
+            ("Средний чек", f"{item.avg_price} ₽" if item.avg_price else None),
+            ("Рейтинг", f"{item.rating} из 5" if item.rating else None),
+            ("Доступно для МГН", "Да" if item.is_accessible else None)
+        ],
+        "description": item.description, "photo": item.photo_url
+    })
+
+@app.get("/events/{item_id}")
+async def event_detail(request: Request, item_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Event).where(Event.id == item_id))
+    item = result.scalar_one_or_none()
+    if not item: raise HTTPException(404, "Событие не найдено")
+    return templates.TemplateResponse(request, "object_detail.html", {
+        "request": request, "item": item, "title": item.title, "back_url": "/events",
+        "details": [
+            ("Дата и время", item.event_date.strftime("%d.%m.%Y %H:%M") if item.event_date else None),
+            ("Место проведения", item.location),
+            ("Категория", item.category),
+            ("Доступно для МГН", "Да" if item.is_accessible else None)
+        ],
+        "description": item.description, "photo": item.photo_url
+    })
+
+@app.get("/routes/{item_id}")
+async def route_detail(request: Request, item_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Route).where(Route.id == item_id))
+    item = result.scalar_one_or_none()
+    if not item: raise HTTPException(404, "Маршрут не найден")
+    return templates.TemplateResponse(request, "object_detail.html", {
+        "request": request, "item": item, "title": item.title, "back_url": "/routes",
+        "details": [
+            ("Длительность", f"{item.duration_hours} ч." if item.duration_hours else None),
+            ("Сложность", item.difficulty),
+            ("Транспорт", item.transport_type),
+            ("Доступно для МГН", "Да" if item.is_accessible else None)
+        ],
+        "description": item.description, "photo": item.photo_url
+    })
+
+@app.get("/safety/{item_id}")
+async def safety_detail(request: Request, item_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(SafetyObject).where(SafetyObject.id == item_id))
+    item = result.scalar_one_or_none()
+    if not item: raise HTTPException(404, "Объект не найден")
+    return templates.TemplateResponse(request, "object_detail.html", {
+        "request": request, "item": item, "title": item.name, "back_url": "/safety",
+        "details": [
+            ("Категория", item.category),
+            ("Адрес", item.address),
+            ("Телефон", item.phone)
+        ],
+        "description": None, "photo": None
+    })
+
+@app.get("/souvenirs/{item_id}")
+async def souvenir_detail(request: Request, item_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Souvenir).where(Souvenir.id == item_id))
+    item = result.scalar_one_or_none()
+    if not item: raise HTTPException(404, "Сувенир не найден")
+    return templates.TemplateResponse(request, "object_detail.html", {
+        "request": request, "item": item, "title": item.name, "back_url": "/souvenirs",
+        "details": [
+            ("Производитель", item.producer),
+            ("Цена", f"{item.price} ₽" if item.price else None),
+            ("Категория", item.category),
+            ("Доступно для МГН", "Да" if item.is_accessible else None)
+        ],
+        "description": item.description, "photo": item.photo_url
+    })

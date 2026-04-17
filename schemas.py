@@ -172,9 +172,15 @@ class SafetyObjectUpdate(BaseModel):
 
 class SouvenirBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
-    producer: Optional[str] = None
-    price: Optional[int] = Field(None, ge=0)
     description: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    category: Optional[str] = None  # Тип магазина
+    working_hours: Optional[str] = None  # Режим работы
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    is_accessible: Optional[bool] = False
     photo_url: Optional[str] = None
 
 class SouvenirCreate(SouvenirBase): 

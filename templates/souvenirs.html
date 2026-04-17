@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Сувениры из Ачинска{% endblock %}
+{% block title %}Сувенирные магазины Ачинска{% endblock %}
 
 {% block content %}
 <div class="text-center py-4 bg-light rounded mb-4">
-    <h1>Сувениры из Ачинска</h1>
-    <p class="text-muted">Памятные подарки от местных мастеров и производителей</p>
+    <h1>Сувенирные магазины Ачинска</h1>
+    <p class="text-muted">Где купить памятные подарки от местных мастеров</p>
 </div>
 
 <div class="card shadow-sm mb-4">
@@ -13,32 +13,21 @@
         <div class="row g-3 mb-3">
             <div class="col-md-4">
                 <label class="form-label small text-muted">Поиск</label>
-                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название или производитель...">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название магазина...">
             </div>
             
             <div class="col-md-3">
-                <label class="form-label small text-muted">Цена до</label>
-                <select id="priceFilter" class="form-select form-select-sm">
-                    <option value="">Любая цена</option>
-                    <option value="500">До 500 ₽</option>
-                    <option value="1000">До 1000 ₽</option>
-                    <option value="2000">До 2000 ₽</option>
-                    <option value="5000">До 5000 ₽</option>
-                </select>
-            </div>
-            
-            <div class="col-md-3">
-                <label class="form-label small text-muted">Категория</label>
+                <label class="form-label small text-muted">Тип магазина</label>
                 <select id="categoryFilter" class="form-select form-select-sm">
-                    <option value="">Все категории</option>
-                    <option value="Съедобные">Съедобные</option>
-                    <option value="Одежда">Одежда и аксессуары</option>
-                    <option value="Декор">Декор и интерьер</option>
-                    <option value="Прочее">Прочее</option>
+                    <option value="">Любой тип</option>
+                    <option value="Сувенирная лавка">Сувенирная лавка</option>
+                    <option value="Мастерская">Мастерская</option>
+                    <option value="Галерея">Галерея</option>
+                    <option value="Торговый центр">Торговый центр</option>
                 </select>
             </div>
             
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-3 d-flex align-items-end">
                 <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
             </div>
         </div>
@@ -47,9 +36,8 @@
             <div class="col-12">
                 <label class="form-label small text-muted d-block mb-2">Сортировка</label>
                 <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="price_asc">Сначала дешевле</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="price_desc">Сначала дороже</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="name">По названию</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="name">По названию</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="category">По типу</button>
                 </div>
             </div>
         </div>
@@ -59,7 +47,7 @@
 <div id="souvenirsList" class="row g-4">
     <div class="col-12 text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2">Загрузка сувениров...</p>
+        <p class="mt-2">Загрузка магазинов...</p>
     </div>
 </div>
 
@@ -74,7 +62,7 @@
 <script>
 let currentPage = 1;
 const limit = 6;
-let currentSort = 'price_asc';
+let currentSort = 'name';
 
 async function loadSouvenirs(append = false) {
     const listEl = document.getElementById('souvenirsList');
@@ -86,13 +74,11 @@ async function loadSouvenirs(append = false) {
     
     try {
         const search = document.getElementById('searchInput').value;
-        const maxPrice = document.getElementById('priceFilter').value;
         const category = document.getElementById('categoryFilter').value;
         
         let url = `/api/souvenirs/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
         
         if (search) url += `&search=${encodeURIComponent(search)}`;
-        if (maxPrice) url += `&max_price=${maxPrice}`;
         if (category) url += `&category=${encodeURIComponent(category)}`;
         url += `&sort=${currentSort}`;
 
@@ -102,7 +88,7 @@ async function loadSouvenirs(append = false) {
         if (!append) listEl.innerHTML = '';
         
         if (data.length === 0 && currentPage === 1) {
-            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Сувениры не найдены</p></div>';
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Магазины не найдены</p></div>';
             loadMoreBtn.classList.add('d-none');
             return;
         }
@@ -114,19 +100,32 @@ async function loadSouvenirs(append = false) {
         
         data.forEach(item => {
             const col = document.createElement('div');
-            col.className = 'col-md-4 col-lg-3'; // Компактные карточки для сувениров
+            col.className = 'col-md-6 col-lg-4';
             
+            // иконки для типов магазинов
+            const typeIcons = {
+                'Сувенирная лавка': '🏪',
+                'Мастерская': '🎨',
+                'Галерея': '🖼️',
+                'Торговый центр': '🛍️'
+            };
+            const icon = typeIcons[item.category] || '🎁';
+
             col.innerHTML = `
                 <div class="card h-100 shadow-sm hover-shadow">
-                    ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 180px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 180px;">Нет фото</div>'}
-                    <div class="card-body p-3">
-                        <h6 class="card-title mb-1">${item.name}</h6>
-                        <p class="text-muted small mb-2">${item.producer || 'Производитель не указан'}</p>
-                        <p class="card-text small text-truncate">${item.description || ''}</p>
+                    ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">${icon} ${item.category || 'Магазин'}</span>
+                        </div>
+                        <h5 class="card-title">${item.name}</h5>
+                        <p class="card-text small text-muted">📍 ${item.address || 'Адрес не указан'}</p>
+                        ${item.working_hours ? `<p class="card-text small">🕒 ${item.working_hours}</p>` : ''}
+                        ${item.phone ? `<p class="card-text small">📞 ${item.phone}</p>` : ''}
+                        <p class="card-text small">${item.description?.substring(0, 100) || ''}${item.description?.length > 100 ? '...' : ''}</p>
                     </div>
-                    <div class="card-footer bg-white border-top-0 p-3 pt-0 d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-primary">${item.price ? item.price + ' ₽' : '—'}</span>
-                        <a href="/souvenirs/${item.id}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                    <div class="card-footer bg-white">
+                        <a href="/souvenirs/${item.id}" class="btn btn-sm btn-outline-primary w-100">Подробнее</a>
                     </div>
                 </div>
             `;
@@ -146,7 +145,6 @@ async function loadSouvenirs(append = false) {
 
 // обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadSouvenirs(); });
-document.getElementById('priceFilter').addEventListener('change', () => { currentPage = 1; loadSouvenirs(); });
 document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadSouvenirs(); });
 
 // обработчики сортировки
@@ -163,13 +161,12 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
 // кнопка сброса
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
-    document.getElementById('priceFilter').value = '';
     document.getElementById('categoryFilter').value = '';
-    currentSort = 'price_asc';
+    currentSort = 'name';
     currentPage = 1;
     
     document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
-    document.querySelector('[data-sort="price_asc"]').classList.add('active');
+    document.querySelector('[data-sort="name"]').classList.add('active');
     
     loadSouvenirs();
 });

@@ -107,18 +107,24 @@ class SafetyObject(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
 
-class Souvenir(Base):
-    __tablename__ = "souvenirs"
+class Souvenir(Base): 
+    __tablename__ = "souvenirs" 
+    
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)
-    producer = Column(String(255), nullable=True)
-    price = Column(Integer, nullable=True)
-    description = Column(Text, nullable=True)
+    name = Column(String(255), nullable=False) 
+    description = Column(Text, nullable=True) 
+    address = Column(String(255), nullable=True)
+    phone = Column(String(20), nullable=True)
+    website = Column(String(255), nullable=True)
+    category = Column(String(100), nullable=True)
+    working_hours = Column(String(100), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    is_accessible = Column(Boolean, default=False, nullable=True)
     photo_url = Column(String, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    is_active = Column(Boolean, default=True)
-    category = Column(String(100), nullable=True) 
+    is_active = Column(Boolean, default=True) 
     
 class User(Base):
     __tablename__="users"

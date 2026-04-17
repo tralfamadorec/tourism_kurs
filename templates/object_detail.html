@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Ачинск туристический{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            {% if photo %}
+            <img src="{{ photo }}" class="card-img-top" alt="{{ title }}" style="max-height: 400px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body">
+                <h1 class="h3 mb-3">{{ title }}</h1>
+                
+                <!-- Таблица характеристик -->
+                <table class="table table-bordered mb-4">
+                    <tbody>
+                        {% for label, value in details %}
+                        {% if value %}
+                        <tr>
+                            <th style="width: 35%;" class="text-muted bg-light">{{ label }}</th>
+                            <td>{{ value }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Описание -->
+                {% if description %}
+                <div class="mb-4">
+                    <h5 class="h5 mb-2">Описание</h5>
+                    <p class="text-secondary">{{ description|replace('\n', '<br>')|safe }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Кнопки -->
+                <div class="d-flex gap-2">
+                    <a href="{{ back_url }}" class="btn btn-outline-secondary">← Назад к списку</a>
+                    {% if item.latitude and item.longitude %}
+                    <a href="/map" class="btn btn-outline-primary">📍 Показать на карте</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
