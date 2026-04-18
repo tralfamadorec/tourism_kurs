@@ -12,21 +12,34 @@
             <div class="card-body">
                 <h1 class="h3 mb-3">{{ title }}</h1>
                 
-                <!-- Таблица характеристик -->
                 <table class="table table-bordered mb-4">
                     <tbody>
                         {% for label, value in details %}
                         {% if value %}
                         <tr>
                             <th style="width: 35%;" class="text-muted bg-light">{{ label }}</th>
-                            <td>{{ value }}</td>
+                            <td>
+                                {% if label == "Телефон" and value %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold">{{ value }}</span>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary copy-phone" 
+                                            data-phone="{{ value }}"
+                                            title="Скопировать номер"
+                                            style="padding: 2px 8px; line-height: 1;">
+                                        Копировать
+                                    </button>
+                                </div>
+                                {% else %}
+                                {{ value }}
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
 
-                <!-- Описание -->
                 {% if description %}
                 <div class="mb-4">
                     <h5 class="h5 mb-2">Описание</h5>
@@ -34,15 +47,50 @@
                 </div>
                 {% endif %}
 
-                <!-- Кнопки -->
                 <div class="d-flex gap-2">
                     <a href="{{ back_url }}" class="btn btn-outline-secondary">← Назад к списку</a>
                     {% if item.latitude and item.longitude %}
-                    <a href="/map" class="btn btn-outline-primary">📍 Показать на карте</a>
+                    <a href="/map" class="btn btn-outline-primary">Показать на карте</a>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// копирование номера телефона в буфер обмена
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.copy-phone').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const phone = this.dataset.phone;
+            try {
+                await navigator.clipboard.writeText(phone);
+                // визуальная обратная связь
+                const originalText = this.textContent;
+                this.textContent = 'Скопировано ✓';
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-success');
+                setTimeout(() => {
+                    this.textContent = originalText;
+                    this.classList.add('btn-outline-secondary');
+                    this.classList.remove('btn-success');
+                }, 1500);
+            } catch (err) {
+                // фоллбэк для старых браузеров
+                const textarea = document.createElement('textarea');
+                textarea.value = phone;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Номер скопирован: ' + phone);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
