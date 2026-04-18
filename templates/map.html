@@ -1,34 +1,56 @@
 {% extends "base.html" %}
 
-{% block title %}Карта туриста | Ачинск{% endblock %}
+{% block title %}Интерактивная карта | Ачинск туристический{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm mb-3">
-    <div class="card-body py-2">
-        <div class="row g-2 align-items-center">
-            <div class="col-md-3">
-                <label class="form-label small mb-1">Показать на карте</label>
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Интерактивная карта Ачинска</h1>
+    <p class="text-muted">Все важные объекты города на одной карте</p>
+</div>
+
+<!-- Панель фильтров -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Поиск по названию</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название или адрес...">
+            </div>
+            
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Категория объектов</label>
                 <select id="typeFilter" class="form-select form-select-sm">
                     <option value="all">Все объекты</option>
                     <option value="attraction">Достопримечательности</option>
-                    <option value="hotel">Гостиницы</option>
-                    <option value="food">Рестораны</option>
-                    <option value="safety">Безопасность</option>
+                    <option value="accommodation">Гостиницы</option>
+                    <option value="food">Где вкусно?</option>
+                    <option value="safety">Службы безопасности</option>
+                    <option value="souvenir">Сувенирные магазины</option>
                 </select>
             </div>
-            <div class="col-md-9 text-end">
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnAttraction">Достопримеч.</button>
-                    <button type="button" class="btn btn-outline-success btn-sm" id="btnHotel">Гостиницы</button>
-                    <button type="button" class="btn btn-outline-warning btn-sm" id="btnFood">Рестораны</button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="btnSafety">Службы</button>
-                </div>
+
+            <div class="col-md-2">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
             </div>
         </div>
     </div>
 </div>
 
-<div id="map" style="height: calc(100vh - 250px); border-radius: 8px;"></div>
+<!-- Карта -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-1">
+        <div id="map" style="height: 500px; border-radius: 4px;"></div>
+    </div>
+</div>
+
+<!-- Список ВСЕХ объектов -->
+<h4 class="mb-3">Все объекты на карте</h4>
+<div id="objectsList" class="row g-3 mb-5">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка данных...</p>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -39,114 +61,270 @@ let myMap;
 let objectCollection;
 let allObjects = [];
 
-// инициализация карты
 ymaps.ready(init);
 
 function init() {
-    // создание карты
     myMap = new ymaps.Map("map", {
         center: [56.2659, 90.4969],
         zoom: 13,
-        controls: ['zoomControl', 'fullscreenControl', 'typeSelector']
+        controls: ['zoomControl', 'fullscreenControl']
     });
 
-    // создаем коллекцию для объектов
     objectCollection = new ymaps.GeoObjectCollection({}, {
-        preset: 'islands#blueCircleIcon',
         balloonMaxWidth: 300
     });
 
     myMap.geoObjects.add(objectCollection);
 
-    // загружаем данные
-    loadMapData();
+    loadAllData();
 }
 
-// загрузка данных со всех API
-async function loadMapData() {
+async function loadAllData() {
     const apis = [
-        { type: 'attraction', url: '/api/attractions/?limit=100', preset: 'islands#blueCircleIcon', name: 'Достопримечательности' },
-        { type: 'hotel', url: '/api/accommodations/?limit=100', preset: 'islands#greenCircleIcon', name: 'Гостиницы' },
-        { type: 'food', url: '/api/foods/?limit=100', preset: 'islands#orangeCircleIcon', name: 'Рестораны' },
-        { type: 'safety', url: '/api/safety/?limit=100', preset: 'islands#redCircleIcon', name: 'Безопасность' }
+        { type: 'attraction', url: '/api/attractions/?limit=100', name: 'Достопримечательности' },
+        { type: 'accommodation', url: '/api/accommodations/?limit=100', name: 'Гостиницы' },
+        { type: 'food', url: '/api/foods/?limit=100', name: 'Питание' },
+        { type: 'safety', url: '/api/safety/?limit=100', name: 'Безопасность' },
+        { type: 'souvenir', url: '/api/souvenirs/?limit=100', name: 'Сувениры' }
     ];
 
+    const container = document.getElementById('objectsList');
+    
     try {
-        const results = await Promise.allSettled(apis.map(async (api) => {
+        const promises = apis.map(async (api) => {
             try {
                 const response = await fetch(api.url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                return data.map(obj => ({ ...obj, objType: api.type, preset: api.preset }));
-            } catch (e) {
-                console.warn(`Ошибка загрузки ${api.type}:`, e);
+                console.log(`✅ ${api.name}: загружено ${data.length} объектов`);
+                return data.map(item => ({
+                    ...item,
+                    objType: api.type,
+                    displayName: item.name || item.title || 'Без названия'
+                }));
+            } catch (err) {
+                console.error(`❌ Ошибка загрузки ${api.name}:`, err);
                 return [];
             }
-        }));
+        });
 
-        allObjects = results
-            .filter(r => r.status === 'fulfilled')
-            .flatMap(r => r.value);
+        const results = await Promise.all(promises);
+        allObjects = results.flat();
+        
+        console.log(`📊 Всего объектов: ${allObjects.length}`);
+        console.log('Объекты с координатами:', allObjects.filter(o => o.latitude && o.longitude).length);
 
-        renderMarkers(allObjects);
+        // Показываем ВСЕ объекты на карте
+        renderMap(allObjects);
+        
+        // Показываем ВСЕ объекты в списке
+        renderList(allObjects);
+        
+        if (allObjects.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center py-5 text-muted">Объекты не найдены. Проверьте, есть ли данные в базе.</div>';
+        }
+
+        // ✅ ПРОВЕРКА: есть ли параметр focus в URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const focusParam = urlParams.get('focus');
+        
+        if (focusParam && allObjects.length > 0) {
+            // Ждём немного, чтобы карта отрисовалась
+            setTimeout(() => {
+                focusOnObjectFromParam(focusParam);
+            }, 500);
+        }
+        
     } catch (err) {
-        console.error('Ошибка загрузки данных карты:', err);
+        console.error('Критическая ошибка:', err);
+        container.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
     }
 }
 
-// отрисовка маркеров
-function renderMarkers(objects) {
+function renderMap(objects) {
     objectCollection.removeAll();
 
-    objects.forEach(obj => {
-        if (!obj.latitude || !obj.longitude) return;
+    const presets = {
+        'attraction': 'islands#blueCircleIcon',
+        'accommodation': 'islands#greenCircleIcon',
+        'food': 'islands#orangeCircleIcon',
+        'safety': 'islands#redCircleIcon',
+        'souvenir': 'islands#violetCircleIcon'
+    };
 
-        // создаем метку
+    const typeLabels = {
+        'attraction': 'Достопримечательность',
+        'accommodation': 'Гостиница',
+        'food': 'Заведение',
+        'safety': 'Служба',
+        'souvenir': 'Магазин'
+    };
+
+    let markersCount = 0;
+
+    objects.forEach(obj => {
+        if (!obj.latitude || !obj.longitude) {
+            console.log('⚠️ Нет координат:', obj.displayName);
+            return;
+        }
+
         const placemark = new ymaps.Placemark(
             [obj.latitude, obj.longitude],
             {
-                balloonContentHeader: obj.name,
+                balloonContentHeader: obj.displayName,
                 balloonContentBody: `
-                    <div style="max-width: 250px;">
-                        <p>${obj.description?.substring(0, 150) || 'Описание отсутствует'}</p>
-                        ${obj.address ? `<p><strong>Адрес:</strong> ${obj.address}</p>` : ''}
-                        ${obj.phone ? `<p><strong>Телефон:</strong> ${obj.phone}</p>` : ''}
-                    </div>
+                    <strong>${typeLabels[obj.objType] || 'Объект'}</strong><br>
+                    ${obj.address || obj.location || ''}<br>
+                    ${obj.phone ? '📞 ' + obj.phone : ''}
                 `,
-                hintContent: obj.name
+                hintContent: obj.displayName
             },
-            { 
-                preset: obj.preset || 'islands#blueCircleIcon',
-                balloonMaxWidth: 300
-            }
+            { preset: presets[obj.objType] || 'islands#blueCircleIcon' }
         );
 
         objectCollection.add(placemark);
+        markersCount++;
     });
 
-    // масштабируем карту чтобы показать все объекты
-    if (objectCollection.getLength() > 0) {
-        myMap.setBounds(objectCollection.getBounds(), {
-            checkZoomRange: true,
-            zoomMargin: 50
+    console.log(`🗺️ Маркеров на карте: ${markersCount}`);
+
+    if (markersCount > 0) {
+        myMap.setBounds(objectCollection.getBounds(), { 
+            checkZoomRange: true, 
+            zoomMargin: 50 
         });
     }
 }
 
-// фильтрация
-function filterMap(type) {
-    if (type === 'all') {
-        renderMarkers(allObjects);
+function renderList(objects) {
+    const container = document.getElementById('objectsList');
+    container.innerHTML = '';
+
+    const typeIcons = {
+        'attraction': '🏛️',
+        'accommodation': '🏨',
+        'food': '🍽️',
+        'safety': '🛡️',
+        'souvenir': '🎁'
+    };
+
+    objects.forEach(obj => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4';
+        
+        const hasCoords = obj.latitude && obj.longitude;
+        
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0">${obj.displayName}</h6>
+                        <span>${typeIcons[obj.objType] || '📍'}</span>
+                    </div>
+                    <p class="small text-muted mb-1">${obj.address || obj.location || 'Адрес не указан'}</p>
+                    ${obj.phone ? `<p class="small mb-2">📞 ${obj.phone}</p>` : ''}
+                    
+                    ${hasCoords ? `
+                        <button onclick="focusOnObject(${obj.latitude}, ${obj.longitude})" 
+                                class="btn btn-sm btn-outline-primary w-100">
+                            Показать на карте
+                        </button>
+                    ` : '<span class="badge bg-secondary">Нет координат</span>'}
+                </div>
+            </div>
+        `;
+        container.appendChild(col);
+    });
+}
+
+// Фокус на объекте из списка (простая версия)
+function focusOnObject(lat, lon) {
+    myMap.setCenter([lat, lon], 16);
+    document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ✅ НОВАЯ ФУНКЦИЯ: фокус по параметру из URL (focus=type-id)
+function focusOnObjectFromParam(focusParam) {
+    // focusParam выглядит как "attraction-5" или "food-12"
+    const parts = focusParam.split('-');
+    if (parts.length < 2) return;
+    
+    const type = parts[0];
+    const id = parseInt(parts[1]);
+    
+    const obj = allObjects.find(o => o.objType === type && o.id === id);
+    
+    if (obj && obj.latitude && obj.longitude) {
+        // Центрируем карту
+        myMap.setCenter([obj.latitude, obj.longitude], 16);
+        
+        // Показываем только этот объект
+        objectCollection.removeAll();
+        
+        const presets = {
+            'attraction': 'islands#blueCircleIcon',
+            'accommodation': 'islands#greenCircleIcon',
+            'food': 'islands#orangeCircleIcon',
+            'safety': 'islands#redCircleIcon',
+            'souvenir': 'islands#violetCircleIcon'
+        };
+        
+        const placemark = new ymaps.Placemark(
+            [obj.latitude, obj.longitude],
+            {
+                balloonContentHeader: obj.displayName,
+                balloonContentBody: `
+                    <strong>${obj.address || obj.location || ''}</strong><br>
+                    ${obj.phone ? '📞 ' + obj.phone : ''}
+                `
+            },
+            { preset: presets[obj.objType] || 'islands#blueCircleIcon' }
+        );
+        
+        objectCollection.add(placemark);
+        placemark.balloon.open();
+        
+        // Прокручиваем к карте
+        document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Подсвечиваем объект в списке
+        document.querySelectorAll('.card').forEach(card => {
+            if (card.innerHTML.includes(obj.displayName)) {
+                card.classList.add('border-primary', 'border-2');
+                setTimeout(() => {
+                    card.classList.remove('border-primary', 'border-2');
+                }, 3000);
+            }
+        });
+        
+        console.log(`🎯 Сфокусировались на объекте: ${obj.displayName}`);
     } else {
-        const filtered = allObjects.filter(obj => obj.objType === type);
-        renderMarkers(filtered);
+        console.warn(`⚠️ Объект ${focusParam} не найден или нет координат`);
     }
 }
 
-// обработчики кнопок
-document.getElementById('btnAttraction').addEventListener('click', () => filterMap('attraction'));
-document.getElementById('btnHotel').addEventListener('click', () => filterMap('hotel'));
-document.getElementById('btnFood').addEventListener('click', () => filterMap('food'));
-document.getElementById('btnSafety').addEventListener('click', () => filterMap('safety'));
-document.getElementById('typeFilter').addEventListener('change', (e) => filterMap(e.target.value));
+// Фильтрация
+function applyFilters() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const type = document.getElementById('typeFilter').value;
+
+    const filtered = allObjects.filter(obj => {
+        const matchType = (type === 'all') || (obj.objType === type);
+        const matchSearch = obj.displayName.toLowerCase().includes(search) || 
+                           (obj.address && obj.address.toLowerCase().includes(search));
+        return matchType && matchSearch;
+    });
+
+    renderMap(filtered);
+    renderList(filtered);
+}
+
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('typeFilter').addEventListener('change', applyFilters);
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('typeFilter').value = 'all';
+    applyFilters();
+});
 </script>
 {% endblock %}

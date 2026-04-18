@@ -50,7 +50,7 @@
                 <div class="d-flex gap-2">
                     <a href="{{ back_url }}" class="btn btn-outline-secondary">← Назад к списку</a>
                     {% if item.latitude and item.longitude %}
-                    <a href="/map" class="btn btn-outline-primary">Показать на карте</a>
+                    <a href="/map?focus={{ objType }}-{{ item.id }}" class="btn btn-outline-primary">Показать на карте</a>
                     {% endif %}
                 </div>
             </div>

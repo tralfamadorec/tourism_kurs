@@ -309,8 +309,7 @@ def inclusive_page(request: Request):
 from models import Attraction, Accommodation, Food, Event, Route, SafetyObject, Souvenir
 from fastapi import HTTPException
 
-# ================= ДЕТАЛЬНЫЕ СТРАНИЦЫ ОБЪЕКТОВ =================
-
+# детальные страницы объекотов
 @app.get("/attractions/{item_id}")
 async def attraction_detail(request: Request, item_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Attraction).where(Attraction.id == item_id))
@@ -323,6 +322,7 @@ async def attraction_detail(request: Request, item_id: int, db: AsyncSession = D
             ("Рейтинг", f"{item.rating} из 5" if item.rating else None),
             ("Доступно для МГН", "Да" if item.is_accessible else None)
         ],
+        "objType": "attraction",
         "description": item.description, "photo": item.photo_url
     })
 
@@ -341,6 +341,7 @@ async def hotel_detail(request: Request, item_id: int, db: AsyncSession = Depend
             ("Рейтинг", f"{item.rating} из 5" if item.rating else None),
             ("Доступно для МГН", "Да" if item.is_accessible else None)
         ],
+        "objType": "accommodation",
         "description": item.description, "photo": item.photo_url
     })
 
@@ -359,6 +360,7 @@ async def food_detail(request: Request, item_id: int, db: AsyncSession = Depends
             ("Рейтинг", f"{item.rating} из 5" if item.rating else None),
             ("Доступно для МГН", "Да" if item.is_accessible else None)
         ],
+        "objType": "food",
         "description": item.description, "photo": item.photo_url
     })
 
@@ -375,6 +377,7 @@ async def event_detail(request: Request, item_id: int, db: AsyncSession = Depend
             ("Категория", item.category),
             ("Доступно для МГН", "Да" if item.is_accessible else None)
         ],
+        "objType": "event",
         "description": item.description, "photo": item.photo_url
     })
 
@@ -391,6 +394,7 @@ async def route_detail(request: Request, item_id: int, db: AsyncSession = Depend
             ("Транспорт", item.transport_type),
             ("Доступно для МГН", "Да" if item.is_accessible else None)
         ],
+        "objType": "route",
         "description": item.description, "photo": item.photo_url
     })
 
@@ -406,6 +410,7 @@ async def safety_detail(request: Request, item_id: int, db: AsyncSession = Depen
             ("Адрес", item.address),
             ("Телефон", item.phone)
         ],
+        "objType": "safety",
         "description": None, "photo": None
     })
 
@@ -422,5 +427,6 @@ async def souvenir_detail(request: Request, item_id: int, db: AsyncSession = Dep
             ("Категория", item.category),
             ("Доступно для МГН", "Да" if item.is_accessible else None)
         ],
+        "objType": "souvenir",
         "description": item.description, "photo": item.photo_url
     })

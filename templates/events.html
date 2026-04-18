@@ -150,14 +150,14 @@ async function loadEvents(append = false) {
     }
 }
 
-// === ОБРАБОТЧИКИ (точно как в attractions.html) ===
+// обработчики
 
-// Фильтры
+// фильтры
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadEvents(); });
 document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
 document.getElementById('locationFilter').addEventListener('input', () => { currentPage = 1; loadEvents(); });
 
-// Сортировка (кнопки)
+// сортировка
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
@@ -168,7 +168,7 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
-// Сброс
+// сброс
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('categoryFilter').value = '';
@@ -182,13 +182,13 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     loadEvents();
 });
 
-// Показать еще
+// показать еще
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadEvents(true);
 });
 
-// Инициализация
+// инициализация
 document.addEventListener('DOMContentLoaded', () => loadEvents());
 </script>
 
