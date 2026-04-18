@@ -110,46 +110,39 @@ async function loadRoutes(append = false) {
             return;
         }
         
-        // цвета для сложности
+        // Цвета для сложности
         const diffColors = {
             'Лёгкий': 'success',
             'Средний': 'warning',
             'Сложный': 'danger'
-        };
-        
-        // иконки транспорта
-        const transportIcons = {
-            'Пешком': '🚶',
-            'Автомобиль': '🚗',
-            'Автобус': '🚌'
         };
 
         data.forEach(route => {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
             
+            // Форматируем длительность: "3.5 ч."
+            const durationStr = route.duration_hours ? route.duration_hours + ' ч.' : '—';
             const badgeClass = diffColors[route.difficulty] || 'secondary';
-            const transportIcon = transportIcons[route.transport_type] || '🚍';
 
             col.innerHTML = `
-                <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
                     ${route.photo_url ? `<img src="${route.photo_url}" class="card-img-top" alt="${route.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="badge bg-${badgeClass}">${route.difficulty || '—'}</span>
-                            <span class="text-muted small">${transportIcon} ${route.transport_type || '—'}</span>
-                        </div>
-                        <h5 class="card-title">${route.title}</h5>
-                        <p class="card-text small text-muted">${route.description?.substring(0, 100) || ''}${route.description?.length > 100 ? '...' : ''}</p>
+                    
+                    <!-- Длительность в правом верхнем углу (вместо рейтинга) -->
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold text-primary">${durationStr}</small>
                     </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Длительность</small>
-                            <strong>${route.duration_hours ? route.duration_hours + ' ч.' : '—'}</strong>
-                        </li>
-                    </ul>
+                    
                     <div class="card-body">
-                        <a href="/routes/${route.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
+                        <span class="badge bg-${badgeClass} mb-2">${route.difficulty || 'Маршрут'}</span>
+                        <h5 class="card-title">${route.title}</h5>
+                        ${route.transport_type ? `<p class="card-text small text-muted">${route.transport_type}</p>` : ''}
+                        <p class="card-text small">${route.description?.substring(0, 80) || ''}${route.description?.length > 80 ? '...' : ''}</p>
+                        ${route.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
+                    </div>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/routes/${route.id}" class="btn btn-outline-primary w-100">Подробнее</a>
                     </div>
                 </div>
             `;
@@ -163,16 +156,21 @@ async function loadRoutes(append = false) {
         }
         
     } catch (err) {
-        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadRoutes()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
     }
 }
 
-// обработчики фильтров
+// Обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadRoutes(); });
 document.getElementById('transportFilter').addEventListener('change', () => { currentPage = 1; loadRoutes(); });
 document.getElementById('difficultyFilter').addEventListener('change', () => { currentPage = 1; loadRoutes(); });
 
-// обработчики сортировки
+// Сортировка
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
@@ -183,7 +181,7 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
-// кнопка сброса
+// Сброс
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('transportFilter').value = '';
@@ -197,13 +195,13 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     loadRoutes();
 });
 
-// показать еще
+// Подгрузка
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadRoutes(true);
 });
 
-// инициализация
+// Старт
 document.addEventListener('DOMContentLoaded', () => loadRoutes());
 </script>
 

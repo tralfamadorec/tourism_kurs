@@ -86,30 +86,39 @@ async function loadFoods(append = false) {
     }
     
     try {
-        const search = document.getElementById('searchInput').value;
-        const cuisine = document.getElementById('cuisineFilter').value;
-        const accessibility = document.getElementById('accessibilityFilter').value;
+        const searchInput = document.getElementById('searchInput');
+        const typeFilter = document.getElementById('typeFilter');
+        const accessibilityFilter = document.getElementById('accessibilityFilter');
+        
+        const search = searchInput ? searchInput.value : '';
+        const cuisineType = typeFilter ? typeFilter.value : '';
+        const isAccessible = accessibilityFilter ? accessibilityFilter.value === 'accessible' : false;
         
         let url = `/api/foods/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
         
         if (search) url += `&search=${encodeURIComponent(search)}`;
-        if (cuisine) url += `&cuisine=${encodeURIComponent(cuisine)}`;
-        if (accessibility) url += `&accessibility=${accessibility}`;
+        if (cuisineType && cuisineType !== '') url += `&cuisine=${encodeURIComponent(cuisineType)}`;
+        if (isAccessible) url += `&accessibility=accessible`;
         url += `&sort=${currentSort}`;
 
         const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`Ошибка сервера: ${response.status}`);
+        }
+
         const data = await response.json();
         
         if (!append) listEl.innerHTML = '';
         
         if (data.length === 0 && currentPage === 1) {
             listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Заведения не найдены</p></div>';
-            loadMoreBtn.classList.add('d-none');
+            if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
             return;
         }
         
         if (data.length === 0) {
-            loadMoreBtn.classList.add('d-none');
+            if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
             return;
         }
         
@@ -117,57 +126,78 @@ async function loadFoods(append = false) {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
             
-            const stars = '⭐'.repeat(Math.round(item.rating || 0));
-            const accessibilityBadge = item.is_accessible ? '<span class="badge bg-success me-2">♿ Доступно</span>' : '';
-            const parkingBadge = item.has_parking ? '<span class="badge bg-info text-dark">🅿️ Парковка</span>' : '';
+            // Генерируем звёздочки рейтинга без emoji
+            let starsHtml = '';
+            const rating = Math.round(item.rating || 0);
+            for (let i = 0; i < 5; i++) {
+                if (i < rating) {
+                    starsHtml += '<span class="text-warning">★</span>';
+                } else {
+                    starsHtml += '<span class="text-muted">☆</span>';
+                }
+            }
             
+            // В блоке генерации карточки замените секцию с рейтингом на:
+
             col.innerHTML = `
-                <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
                     ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold">${item.rating ? item.rating.toFixed(1) : '—'} ★</small>
+                    </div>
+                    
                     <div class="card-body">
-                        <div class="mb-2">
-                            ${accessibilityBadge}${parkingBadge}
-                            <span class="badge bg-secondary">${item.cuisine || 'Универсальная'}</span>
-                        </div>
                         <h5 class="card-title">${item.name}</h5>
                         <p class="card-text small text-muted">${item.address || 'Адрес не указан'}</p>
-                        <p class="card-text small">${item.description?.substring(0, 100) || ''}${item.description?.length > 100 ? '...' : ''}</p>
+                        ${item.cuisine ? `<p class="card-text small">${item.cuisine}</p>` : ''}
+                        <p class="card-text small">${item.description?.substring(0, 80) || ''}${item.description?.length > 80 ? '...' : ''}</p>
+                        ${item.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
                     </div>
                     <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Рейтинг:</span>
-                            <span class="text-warning">${stars || '—'}</span>
-                        </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <span>Средний чек:</span>
                             <span class="fw-bold text-primary">${item.avg_price ? item.avg_price + ' ₽' : '—'}</span>
                         </li>
                     </ul>
-                    <div class="card-body">
-                        <a href="/food/${item.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/food/${item.id}" class="btn btn-outline-primary w-100">Подробнее</a>
                     </div>
                 </div>
             `;
             listEl.appendChild(col);
         });
         
-        if (data.length === limit) {
-            loadMoreBtn.classList.remove('d-none');
-        } else {
-            loadMoreBtn.classList.add('d-none');
+        if (loadMoreBtn) {
+            if (data.length === limit) {
+                loadMoreBtn.classList.remove('d-none');
+            } else {
+                loadMoreBtn.classList.add('d-none');
+            }
         }
         
     } catch (err) {
-        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadFoods()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
     }
 }
 
-// обработчики фильтров
-document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadFoods(); });
-document.getElementById('cuisineFilter').addEventListener('change', () => { currentPage = 1; loadFoods(); });
-document.getElementById('accessibilityFilter').addEventListener('change', () => { currentPage = 1; loadFoods(); });
+// Инициализация обработчиков
+const searchInput = document.getElementById('searchInput');
+const typeFilter = document.getElementById('typeFilter');
+const accessibilityFilter = document.getElementById('accessibilityFilter');
+const resetBtn = document.getElementById('resetBtn');
+const loadMoreBtn = document.getElementById('loadMoreBtn');
 
-// обработчики сортировки
+if (searchInput) searchInput.addEventListener('input', () => { currentPage = 1; loadFoods(); });
+if (typeFilter) typeFilter.addEventListener('change', () => { currentPage = 1; loadFoods(); });
+if (accessibilityFilter) accessibilityFilter.addEventListener('change', () => { currentPage = 1; loadFoods(); });
+
+// Сортировка
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
@@ -178,32 +208,41 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
-// кнопка сброса
-document.getElementById('resetBtn').addEventListener('click', () => {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('cuisineFilter').value = '';
-    document.getElementById('accessibilityFilter').value = '';
-    currentSort = 'rating';
-    currentPage = 1;
-    
-    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
-    document.querySelector('[data-sort="rating"]').classList.add('active');
-    
-    loadFoods();
-});
+// Сброс
+if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        if (typeFilter) typeFilter.value = '';
+        if (accessibilityFilter) accessibilityFilter.value = '';
+        currentSort = 'rating';
+        currentPage = 1;
+        
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        const defaultSort = document.querySelector('[data-sort="rating"]');
+        if (defaultSort) defaultSort.classList.add('active');
+        
+        loadFoods();
+    });
+}
 
-// показать еще
-document.getElementById('loadMoreBtn').addEventListener('click', () => {
-    currentPage++;
-    loadFoods(true);
-});
+// Подгрузка
+if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', () => {
+        currentPage++;
+        loadFoods(true);
+    });
+}
 
-// инициализация
+// Старт
 document.addEventListener('DOMContentLoaded', () => loadFoods());
 </script>
 
 <style>
-.hover-shadow { transition: box-shadow 0.3s ease; }
-.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
 </style>
 {% endblock %}

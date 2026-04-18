@@ -28,19 +28,16 @@
                 </select>
             </div>
             
-            <!-- Место -->
             <div class="col-md-3">
                 <label class="form-label small text-muted">Место</label>
                 <input type="text" id="locationFilter" class="form-control form-control-sm" placeholder="Например: ДК">
             </div>
             
-            <!-- Кнопка сброса -->
             <div class="col-md-2 d-flex align-items-end">
                 <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
             </div>
         </div>
         
-        <!-- Сортировка (кнопки, как на скриншоте) -->
         <div class="row">
             <div class="col-12">
                 <label class="form-label small text-muted d-block mb-2">Сортировка</label>
@@ -54,7 +51,6 @@
     </div>
 </div>
 
-<!-- Список событий (заполняется через JS) -->
 <div id="eventsList" class="row g-4">
     <div class="col-12 text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
@@ -62,7 +58,6 @@
     </div>
 </div>
 
-<!-- Кнопка "Показать еще" -->
 <div class="text-center mt-5 mb-4">
     <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
         Показать еще
@@ -116,23 +111,32 @@ async function loadEvents(append = false) {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
             
-            const eventDate = event.event_date ? new Date(event.event_date) : null;
-            const dateStr = eventDate ? eventDate.toLocaleDateString('ru-RU', {
-                day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
-            }) : 'Дата не указана';
+            // Форматируем дату: "15 мая, 19:00"
+            let dateStr = 'Дата не указана';
+            if (event.event_date) {
+                const d = new Date(event.event_date);
+                dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ', ' + 
+                          d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            }
             
             col.innerHTML = `
-                <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
                     ${event.photo_url ? `<img src="${event.photo_url}" class="card-img-top" alt="${event.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    
+                    <!-- Дата в правом верхнем углу (вместо рейтинга) -->
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold text-primary">${dateStr}</small>
+                    </div>
+                    
                     <div class="card-body">
-                        <span class="badge bg-info text-dark mb-2">📅 ${dateStr}</span>
-                        <span class="badge bg-secondary mb-2">${event.category || 'Общее'}</span>
+                        <span class="badge bg-secondary mb-2">${event.category || 'Событие'}</span>
                         <h5 class="card-title">${event.title}</h5>
                         <p class="card-text small text-muted">${event.location || 'Место не указано'}</p>
-                        <p class="card-text small">${event.description?.substring(0, 100) || ''}${event.description?.length > 100 ? '...' : ''}</p>
+                        <p class="card-text small">${event.description?.substring(0, 80) || ''}${event.description?.length > 80 ? '...' : ''}</p>
+                        ${event.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
                     </div>
-                    <div class="card-body">
-                        <a href="/events/${event.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/events/${event.id}" class="btn btn-outline-primary w-100">Подробнее</a>
                     </div>
                 </div>
             `;
@@ -146,18 +150,21 @@ async function loadEvents(append = false) {
         }
         
     } catch (err) {
-        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadEvents()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
     }
 }
 
-// обработчики
-
-// фильтры
+// Обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadEvents(); });
 document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
 document.getElementById('locationFilter').addEventListener('input', () => { currentPage = 1; loadEvents(); });
 
-// сортировка
+// Сортировка
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
@@ -168,7 +175,7 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
-// сброс
+// Сброс
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('categoryFilter').value = '';
@@ -182,13 +189,13 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     loadEvents();
 });
 
-// показать еще
+// Подгрузка
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadEvents(true);
 });
 
-// инициализация
+// Старт
 document.addEventListener('DOMContentLoaded', () => loadEvents());
 </script>
 

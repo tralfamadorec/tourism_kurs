@@ -17,7 +17,8 @@
             <option value="accommodation">Гостиницы</option>
             <option value="food">Питание</option>
             <option value="event">События</option>
-            <option value="safety">Безопасность</option>
+            <option value="route">Маршруты</option>
+            <option value="souvenir">Сувениры</option>
         </select>
     </div>
 </div>
@@ -35,23 +36,27 @@
 let allAccessibleObjects = [];
 
 async function loadAccessibleObjects() {
-    const endpoints = {
-        attraction: '/api/attractions/?limit=100&accessibility=accessible',
-        accommodation: '/api/accommodations/?limit=100',
-        food: '/api/foods/?limit=100&accessibility=accessible',
-        event: '/api/events/?limit=100'
-    };
+    // Используем проверенную структуру массива, как в рабочем коде
+    const endpoints = [
+        { type: 'attraction', url: '/api/attractions/?limit=100' },
+        { type: 'accommodation', url: '/api/accommodations/?limit=100' },
+        { type: 'food', url: '/api/foods/?limit=100' },
+        { type: 'event', url: '/api/events/?limit=100' },
+        { type: 'route', url: '/api/routes/?limit=100' },
+        { type: 'souvenir', url: '/api/souvenirs/?limit=100' }
+    ];
 
     const results = [];
     
-    for (const [type, url] of Object.entries(endpoints)) {
+    for (const api of endpoints) {
         try {
-            const response = await fetch(url);
+            const response = await fetch(api.url);
             const data = await response.json();
+            // Фильтруем на клиенте
             const accessible = data.filter(obj => obj.is_accessible === true);
-            results.push(...accessible.map(obj => ({...obj, objType: type})));
+            results.push(...accessible.map(obj => ({...obj, objType: api.type})));
         } catch (e) {
-            console.warn(`Ошибка загрузки ${type}:`, e);
+            console.warn(`Ошибка загрузки ${api.type}:`, e);
         }
     }
     
@@ -68,28 +73,41 @@ function renderObjects(objects) {
         return;
     }
     
+    const typeLabels = {
+        attraction: 'Достопримечательность',
+        accommodation: 'Гостиница',
+        food: 'Заведение',
+        event: 'Событие',
+        route: 'Маршрут',
+        souvenir: 'Магазин'
+    };
+    
     objects.forEach(obj => {
         const col = document.createElement('div');
         col.className = 'col-md-6 col-lg-4';
         
-        const typeLabels = {
-            attraction: 'Достопримечательность',
-            accommodation: 'Проживание',
-            food: 'Питание',
-            event: 'Событие'
-        };
+        const typeLabel = typeLabels[obj.objType] || 'Объект';
         
+        // Формируем ссылку
+        let link = `/${obj.objType === 'accommodation' ? 'hotels' : obj.objType === 'food' ? 'food' : obj.objType === 'souvenir' ? 'souvenirs' : obj.objType + 's'}/${obj.id}`;
+        
+        // Единый шаблон карточки (как в других разделах)
         col.innerHTML = `
-            <div class="card h-100 shadow-sm">
+            <div class="card h-100 shadow-sm hover-shadow position-relative">
+                ${obj.photo_url ? `<img src="${obj.photo_url}" class="card-img-top" alt="${obj.name || obj.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                
+                <!-- Тип в правом верхнем углу -->
+                <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                    <small class="fw-bold text-primary">${typeLabel}</small>
+                </div>
+                
                 <div class="card-body">
-                    <span class="badge bg-success mb-2">Доступно для МГН</span>
-                    <span class="badge bg-secondary mb-2">${typeLabels[obj.objType] || 'Объект'}</span>
                     <h5 class="card-title">${obj.name || obj.title}</h5>
                     <p class="card-text small text-muted">${obj.address || obj.location || 'Адрес не указан'}</p>
-                    <p class="card-text small">${(obj.description || '').substring(0, 100)}${obj.description?.length > 100 ? '...' : ''}</p>
+                    <p class="card-text small">${(obj.description || '').substring(0, 80)}${obj.description?.length > 80 ? '...' : ''}</p>
                 </div>
-                <div class="card-footer bg-white">
-                    <a href="/${obj.objType === 'accommodation' ? 'hotels' : obj.objType === 'food' ? 'food' : obj.objType + 's'}/${obj.id}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                <div class="card-body pt-0 mt-3">
+                    <a href="${link}" class="btn btn-outline-primary w-100">Подробнее</a>
                 </div>
             </div>
         `;
@@ -109,4 +127,13 @@ function filterObjects() {
 
 document.addEventListener('DOMContentLoaded', loadAccessibleObjects);
 </script>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
 {% endblock %}

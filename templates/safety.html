@@ -29,7 +29,6 @@
                 </select>
             </div>
 
-            <!-- Кнопка сброса -->
             <div class="col-md-2 d-flex align-items-end">
                 <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
             </div>
@@ -89,38 +88,23 @@ async function loadSafetyObjects(append = false) {
             return;
         }
         
-        // иконки для категорий
-        const icons = {
-            'Полиция': '👮',
-            'МЧС': '🚒',
-            'Скорая помощь': '🚑',
-            'Медицина': '🏥',
-            'Аптека': '💊',
-            'Другое': '📍'
-        };
-
         data.forEach(item => {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
-            
-            const icon = icons[item.category] || '📍';
 
             col.innerHTML = `
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold text-primary">${item.category || 'Служба'}</small>
+                    </div>
+                    
                     <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <span class="fs-2 me-2">${icon}</span>
-                            <h5 class="card-title mb-0">${item.name}</h5>
-                        </div>
-                        
-                        <p class="card-text text-muted small mb-2">${item.category}</p>
-                        ${item.address ? `<p class="card-text small mb-2">📍 ${item.address}</p>` : ''}
-                        
-                        <div class="mt-3">
-                            <a href="/safety/${item.id}" class="btn btn-outline-primary btn-sm w-100">
-                                Подробнее
-                            </a>
-                        </div>
+                        <h5 class="card-title">${item.name}</h5>
+                        ${item.address ? `<p class="card-text small text-muted">${item.address}</p>` : ''}
+                        ${item.phone ? `<p class="card-text small">Телефон: ${item.phone}</p>` : ''}
+                    </div>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/safety/${item.id}" class="btn btn-outline-primary w-100">Подробнее</a>
                     </div>
                 </div>
             `;
@@ -134,13 +118,20 @@ async function loadSafetyObjects(append = false) {
         }
         
     } catch (err) {
-        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadSafetyObjects()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
     }
 }
 
-// обработчики
+// Обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadSafetyObjects(); });
 document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadSafetyObjects(); });
+
+// Сброс
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('categoryFilter').value = '';
@@ -148,11 +139,18 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     loadSafetyObjects();
 });
 
+// Подгрузка
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadSafetyObjects(true);
 });
 
+// Старт
 document.addEventListener('DOMContentLoaded', () => loadSafetyObjects());
 </script>
+
+<style>
+.hover-shadow { transition: box-shadow 0.3s ease; }
+.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
+</style>
 {% endblock %}

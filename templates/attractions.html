@@ -110,25 +110,23 @@ async function loadAttractions(append = false) {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
             
-            const stars = '⭐'.repeat(Math.round(item.rating || 0));
-            
             col.innerHTML = `
-                <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
                     ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    
+                    <!-- Рейтинг в правом верхнем углу -->
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold">${item.rating ? item.rating.toFixed(1) : '—'} ★</small>
+                    </div>
+                    
                     <div class="card-body">
                         <h5 class="card-title">${item.name}</h5>
                         <p class="card-text small text-muted">${item.address || 'Адрес не указан'}</p>
                         <p class="card-text small">${item.description?.substring(0, 80) || ''}${item.description?.length > 80 ? '...' : ''}</p>
                         ${item.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
                     </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Рейтинг:</span>
-                            <span class="text-warning">${stars || '—'}</span>
-                        </li>
-                    </ul>
-                    <div class="card-body pt-0">
-                        <a href="/attractions/${item.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/attractions/${item.id}" class="btn btn-outline-primary w-100">Подробнее</a>
                     </div>
                 </div>
             `;
@@ -142,16 +140,21 @@ async function loadAttractions(append = false) {
         }
         
     } catch (err) {
-        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadAttractions()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
     }
 }
 
-// обработчики фильтров
+// Обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadAttractions(); });
 document.getElementById('ratingFilter').addEventListener('change', () => { currentPage = 1; loadAttractions(); });
 document.getElementById('accessibilityFilter').addEventListener('change', () => { currentPage = 1; loadAttractions(); });
 
-// обработчики сортировки
+// Сортировка
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
@@ -162,7 +165,7 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
-// кнопка сброса
+// Сброс
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('ratingFilter').value = '';
@@ -176,13 +179,13 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     loadAttractions();
 });
 
-// показать еще
+// Подгрузка
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadAttractions(true);
 });
 
-// инициализация
+// Старт
 document.addEventListener('DOMContentLoaded', () => loadAttractions());
 </script>
 

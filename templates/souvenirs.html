@@ -101,31 +101,26 @@ async function loadSouvenirs(append = false) {
         data.forEach(item => {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
-            
-            // иконки для типов магазинов
-            const typeIcons = {
-                'Сувенирная лавка': '🏪',
-                'Мастерская': '🎨',
-                'Галерея': '🖼️',
-                'Торговый центр': '🛍️'
-            };
-            const icon = typeIcons[item.category] || '🎁';
 
             col.innerHTML = `
-                <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
                     ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
-                    <div class="card-body">
-                        <div class="mb-2">
-                            <span class="badge bg-secondary">${icon} ${item.category || 'Магазин'}</span>
-                        </div>
-                        <h5 class="card-title">${item.name}</h5>
-                        <p class="card-text small text-muted">📍 ${item.address || 'Адрес не указан'}</p>
-                        ${item.working_hours ? `<p class="card-text small">🕒 ${item.working_hours}</p>` : ''}
-                        ${item.phone ? `<p class="card-text small">📞 ${item.phone}</p>` : ''}
-                        <p class="card-text small">${item.description?.substring(0, 100) || ''}${item.description?.length > 100 ? '...' : ''}</p>
+                    
+                    <!-- Тип магазина в правом верхнем углу -->
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold text-primary">${item.category || 'Магазин'}</small>
                     </div>
-                    <div class="card-footer bg-white">
-                        <a href="/souvenirs/${item.id}" class="btn btn-sm btn-outline-primary w-100">Подробнее</a>
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">${item.name}</h5>
+                        ${item.address ? `<p class="card-text small text-muted">${item.address}</p>` : ''}
+                        ${item.working_hours ? `<p class="card-text small">Режим работы: ${item.working_hours}</p>` : ''}
+                        ${item.phone ? `<p class="card-text small">Телефон: ${item.phone}</p>` : ''}
+                        <p class="card-text small">${item.description?.substring(0, 80) || ''}${item.description?.length > 80 ? '...' : ''}</p>
+                        ${item.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
+                    </div>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/souvenirs/${item.id}" class="btn btn-outline-primary w-100">Подробнее</a>
                     </div>
                 </div>
             `;
@@ -139,26 +134,20 @@ async function loadSouvenirs(append = false) {
         }
         
     } catch (err) {
-        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadSouvenirs()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
     }
 }
 
-// обработчики фильтров
+// Обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadSouvenirs(); });
 document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadSouvenirs(); });
 
-// обработчики сортировки
-document.querySelectorAll('[data-sort]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        currentSort = e.target.dataset.sort;
-        currentPage = 1;
-        loadSouvenirs();
-    });
-});
-
-// кнопка сброса
+// Сброс
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('categoryFilter').value = '';
@@ -171,13 +160,13 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     loadSouvenirs();
 });
 
-// показать еще
+// Подгрузка
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadSouvenirs(true);
 });
 
-// инициализация
+// Старт
 document.addEventListener('DOMContentLoaded', () => loadSouvenirs());
 </script>
 
