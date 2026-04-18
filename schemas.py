@@ -22,6 +22,7 @@ class AccommodationCreate(AccommodationBase):
 
 class AccommodationUpdate(AccommodationBase):
     name: Optional[str] = Field(None, min_length=3, max_length=255)
+    is_accessible: Optional[bool] = False 
 
 class AccommodationResponse(AccommodationBase):
     id: int
@@ -55,6 +56,7 @@ class AttractionUpdate(BaseModel):
     address: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    is_accessible: Optional[bool] = False 
     photo_url: Optional[str] = None
 
 class EventBase(BaseModel):
@@ -71,6 +73,7 @@ class EventCreate(EventBase):
 class EventUpdate(EventBase):
     title: Optional[str] = Field(None, min_length=3, max_length=255)
     event_date: Optional[datetime] = None
+    is_accessible: Optional[bool] = False 
 
 class EventResponse(EventBase):
     id: int
@@ -98,6 +101,7 @@ class FoodCreate(FoodBase):
 
 class FoodUpdate(FoodBase):
     name: Optional[str] = Field(None, min_length=3, max_length=255)
+    is_accessible: Optional[bool] = False 
 
 class FoodResponse(FoodBase):
     id: int

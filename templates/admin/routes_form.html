@@ -109,34 +109,38 @@ form.addEventListener('submit', async (e) => {
     errorDiv.classList.add('d-none');
     successDiv.classList.add('d-none');
 
-    const data = {};
-        new FormData(form).forEach((value, key) => {
-            if (key === 'is_accessible') {
-                data[key] = value === 'on';
-            } else if (value) {
-                data[key] = value;
-            }
-        });
+    const data = {
+        is_accessible: document.getElementById('is_accessible')?.checked || false
+    };
     
-    if (data.duration_hours) data.duration_hours = parseFloat(data.duration_hours);
+    new FormData(form).forEach((value, key) => {
+        if (key !== 'is_accessible' && value) {
+            data[key] = value;
+        }
+    });
+    
+    if (data.price) data.price = parseInt(data.price);
+    if (data.latitude) data.latitude = parseFloat(data.latitude);
+    if (data.longitude) data.longitude = parseFloat(data.longitude);
+    if (data.rating) data.rating = parseFloat(data.rating);
 
     try {
         let response;
         if (isEdit) {
             response = await fetch(`/api/routes/${itemId}`, {
                 method: 'PUT',
-                headers: {
+                headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getCookie('access_token')}`
+                    'Authorization': `Bearer ${getCookie('access_token')}` 
                 },
                 body: JSON.stringify(data)
             });
         } else {
             response = await fetch('/api/routes/', {
                 method: 'POST',
-                headers: {
+                headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getCookie('access_token')}`
+                    'Authorization': `Bearer ${getCookie('access_token')}` 
                 },
                 body: JSON.stringify(data)
             });
@@ -148,9 +152,7 @@ form.addEventListener('submit', async (e) => {
         }
 
         successDiv.classList.remove('d-none');
-        setTimeout(() => {
-            window.location.href = '/admin/routes';
-        }, 1500);
+        setTimeout(() => { window.location.href = '/admin/routes'; }, 1500);
 
     } catch (err) {
         errorDiv.textContent = err.message;

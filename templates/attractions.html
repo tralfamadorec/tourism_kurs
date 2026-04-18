@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Афиша событий Ачинска{% endblock %}
+{% block title %}Достопримечательности Ачинска{% endblock %}
 
 {% block content %}
 <div class="text-center py-4 bg-light rounded mb-4">
-    <h1>События в Ачинске</h1>
-    <p class="text-muted">Афиша мероприятий, концертов и праздников</p>
+    <h1>Достопримечательности Ачинска</h1>
+    <p class="text-muted">Музеи, памятники, парки и знаковые места города</p>
 </div>
 
 <div class="card shadow-sm mb-4">
@@ -13,24 +13,24 @@
         <div class="row g-3 mb-3">
             <div class="col-md-4">
                 <label class="form-label small text-muted">Поиск</label>
-                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название события...">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название или адрес...">
             </div>
             
             <div class="col-md-3">
-                <label class="form-label small text-muted">Категория</label>
-                <select id="categoryFilter" class="form-select form-select-sm">
-                    <option value="">Все категории</option>
-                    <option value="Концерт">Концерт</option>
-                    <option value="Выставка">Выставка</option>
-                    <option value="Фестиваль">Фестиваль</option>
-                    <option value="Спорт">Спорт</option>
-                    <option value="Детям">Детям</option>
+                <label class="form-label small text-muted">Рейтинг</label>
+                <select id="ratingFilter" class="form-select form-select-sm">
+                    <option value="">Любой рейтинг</option>
+                    <option value="4">4.0+</option>
+                    <option value="3">3.0+</option>
                 </select>
             </div>
             
             <div class="col-md-3">
-                <label class="form-label small text-muted">Место</label>
-                <input type="text" id="locationFilter" class="form-control form-control-sm" placeholder="Например: ДК">
+                <label class="form-label small text-muted">Доступность</label>
+                <select id="accessibilityFilter" class="form-select form-select-sm">
+                    <option value="">Все объекты</option>
+                    <option value="accessible">Доступно для МГН</option>
+                </select>
             </div>
             
             <div class="col-md-2 d-flex align-items-end">
@@ -42,19 +42,18 @@
             <div class="col-12">
                 <label class="form-label small text-muted d-block mb-2">Сортировка</label>
                 <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="date_asc">Сначала ближайшие</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="date_desc">Сначала поздние</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="title">По названию</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="rating">По популярности</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="name">По алфавиту</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div id="eventsList" class="row g-4">
+<div id="attractionsList" class="row g-4">
     <div class="col-12 text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2">Загрузка событий...</p>
+        <p class="mt-2">Загрузка достопримечательностей...</p>
     </div>
 </div>
 
@@ -69,10 +68,10 @@
 <script>
 let currentPage = 1;
 const limit = 6;
-let currentSort = 'date_asc';
+let currentSort = 'rating';
 
-async function loadEvents(append = false) {
-    const listEl = document.getElementById('eventsList');
+async function loadAttractions(append = false) {
+    const listEl = document.getElementById('attractionsList');
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     
     if (!append) {
@@ -81,14 +80,14 @@ async function loadEvents(append = false) {
     
     try {
         const search = document.getElementById('searchInput').value;
-        const category = document.getElementById('categoryFilter').value;
-        const location = document.getElementById('locationFilter').value;
+        const minRating = document.getElementById('ratingFilter').value;
+        const accessible = document.getElementById('accessibilityFilter').value;
         
-        let url = `/api/events/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
+        let url = `/api/attractions/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
         
         if (search) url += `&search=${encodeURIComponent(search)}`;
-        if (category) url += `&category=${encodeURIComponent(category)}`;
-        if (location) url += `&location=${encodeURIComponent(location)}`;
+        if (minRating) url += `&min_rating=${minRating}`;
+        if (accessible === 'accessible') url += `&accessibility=accessible`;
         url += `&sort=${currentSort}`;
 
         const response = await fetch(url);
@@ -97,7 +96,7 @@ async function loadEvents(append = false) {
         if (!append) listEl.innerHTML = '';
         
         if (data.length === 0 && currentPage === 1) {
-            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Событий не найдено</p></div>';
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Достопримечательности не найдены</p></div>';
             loadMoreBtn.classList.add('d-none');
             return;
         }
@@ -107,27 +106,29 @@ async function loadEvents(append = false) {
             return;
         }
         
-        data.forEach(event => {
+        data.forEach(item => {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
             
-            const eventDate = event.event_date ? new Date(event.event_date) : null;
-            const dateStr = eventDate ? eventDate.toLocaleDateString('ru-RU', {
-                day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
-            }) : 'Дата не указана';
+            const stars = '⭐'.repeat(Math.round(item.rating || 0));
             
             col.innerHTML = `
                 <div class="card h-100 shadow-sm hover-shadow">
-                    ${event.photo_url ? `<img src="${event.photo_url}" class="card-img-top" alt="${event.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
                     <div class="card-body">
-                        <span class="badge bg-info text-dark mb-2">📅 ${dateStr}</span>
-                        <span class="badge bg-secondary mb-2">${event.category || 'Общее'}</span>
-                        <h5 class="card-title">${event.title}</h5>
-                        <p class="card-text small text-muted">${event.location || 'Место не указано'}</p>
-                        <p class="card-text small">${event.description?.substring(0, 100) || ''}${event.description?.length > 100 ? '...' : ''}</p>
+                        <h5 class="card-title">${item.name}</h5>
+                        <p class="card-text small text-muted">${item.address || 'Адрес не указан'}</p>
+                        <p class="card-text small">${item.description?.substring(0, 80) || ''}${item.description?.length > 80 ? '...' : ''}</p>
+                        ${item.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
                     </div>
-                    <div class="card-body">
-                        <a href="/events/${event.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Рейтинг:</span>
+                            <span class="text-warning">${stars || '—'}</span>
+                        </li>
+                    </ul>
+                    <div class="card-body pt-0">
+                        <a href="/attractions/${item.id}" class="btn btn-outline-primary w-100">Подробнее →</a>
                     </div>
                 </div>
             `;
@@ -145,47 +146,52 @@ async function loadEvents(append = false) {
     }
 }
 
-// Обработчики фильтров
-document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadEvents(); });
-document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
-document.getElementById('locationFilter').addEventListener('input', () => { currentPage = 1; loadEvents(); });
+// обработчики фильтров
+document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadAttractions(); });
+document.getElementById('ratingFilter').addEventListener('change', () => { currentPage = 1; loadAttractions(); });
+document.getElementById('accessibilityFilter').addEventListener('change', () => { currentPage = 1; loadAttractions(); });
 
-// Обработчики сортировки
+// обработчики сортировки
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
         currentSort = e.target.dataset.sort;
         currentPage = 1;
-        loadEvents();
+        loadAttractions();
     });
 });
 
-// Кнопка сброса
+// кнопка сброса
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
-    document.getElementById('categoryFilter').value = '';
-    document.getElementById('locationFilter').value = '';
-    currentSort = 'date_asc';
+    document.getElementById('ratingFilter').value = '';
+    document.getElementById('accessibilityFilter').value = '';
+    currentSort = 'rating';
     currentPage = 1;
     
     document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
-    document.querySelector('[data-sort="date_asc"]').classList.add('active');
+    document.querySelector('[data-sort="rating"]').classList.add('active');
     
-    loadEvents();
+    loadAttractions();
 });
 
-// Показать еще
+// показать еще
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
-    loadEvents(true);
+    loadAttractions(true);
 });
 
-document.addEventListener('DOMContentLoaded', () => loadEvents());
+// инициализация
+document.addEventListener('DOMContentLoaded', () => loadAttractions());
 </script>
 
 <style>
-.hover-shadow { transition: box-shadow 0.3s ease; }
-.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
 </style>
 {% endblock %}
