@@ -58,18 +58,38 @@
                 </div>
             </div>
 
-            <div class="col-md-6 mb-3 d-flex align-items-end">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
-                    <label class="form-check-label" for="is_accessible">
-                        Доступно для маломобильных групп (МГН)
-                    </label>
+            <div class="row">
+                <div class="col-md-6 mb-3 d-flex align-items-end">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
+                        <label class="form-check-label" for="is_accessible">Доступно для МГН</label>
+                    </div>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label for="photo_url" class="form-label">Ссылка на фото</label>
-                <input type="url" class="form-control" id="photo_url" name="photo_url" placeholder="/static/images/...">
+            <div class="mb-3 p-3 bg-light rounded border">
+                <label class="form-label fw-bold">Изображение</label>
+                
+                <div id="currentPhotoContainer" class="mb-3 d-none">
+                    <p class="small text-muted mb-1">Текущее изображение:</p>
+                    <img id="currentImage" src="" class="img-thumbnail mb-2" style="max-height: 150px;">
+                    <br>
+                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger">Удалить фото</button>
+                </div>
+
+                <hr>
+                <div class="mb-3">
+                    <label class="small text-muted">Загрузить с компьютера:</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="photoFile" accept="image/*">
+                        <button type="button" id="uploadPhotoBtn" class="btn btn-outline-primary">Загрузить</button>
+                    </div>
+                </div>
+                <div class="mb-0">
+                    <label class="small text-muted">Или вставьте ссылку:</label>
+                    <input type="url" class="form-control" id="photoLink" placeholder="https://...">
+                </div>
+                <input type="hidden" id="photo_url" name="photo_url">
             </div>
 
             <div id="formError" class="alert alert-danger d-none" role="alert"></div>
@@ -87,93 +107,131 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    const form = document.getElementById('hotelForm');
-    const isEdit = {{ 'true' if is_edit else 'false' }};
-    const itemId = {{ item_id if is_edit else 'null' }};
+const form = document.getElementById('hotelForm');
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const itemId = {{ item_id if is_edit else 'null' }};
 
-    if (isEdit && itemId) {
-        loadHotelData(itemId);
-    }
+// Элементы фото
+const photoFileInput = document.getElementById('photoFile');
+const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+const photoLinkInput = document.getElementById('photoLink');
+const photoUrlInput = document.getElementById('photo_url');
+const currentPhotoContainer = document.getElementById('currentPhotoContainer');
+const currentImage = document.getElementById('currentImage');
+const deletePhotoBtn = document.getElementById('deletePhotoBtn');
 
-    async function loadHotelData(id) {
-        try {
-            const data = await apiRequest(`/api/accommodations/${id}`);
+if (isEdit && itemId) loadHotelData(itemId);
 
-            document.getElementById('name').value = data.name || '';
-            document.getElementById('description').value = data.description || '';
-            document.getElementById('address').value = data.address || '';
-            document.getElementById('phone').value = data.phone || '';
-            document.getElementById('rating').value = data.rating || '';
-            document.getElementById('price_per_night').value = data.price_per_night || '';
-            document.getElementById('website').value = data.website || '';
-            document.getElementById('latitude').value = data.latitude || '';
-            document.getElementById('longitude').value = data.longitude || '';
-            document.getElementById('is_accessible').checked = !!data.is_accessible;
-            document.getElementById('photo_url').value = data.photo_url || '';
-
-        } catch (err) {
-            document.getElementById('formError').textContent = 'Ошибка загрузки данных: ' + err.message;
-            document.getElementById('formError').classList.remove('d-none');
+async function loadHotelData(id) {
+    try {
+        const data = await apiRequest(`/api/accommodations/${id}`);
+        
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('description').value = data.description || '';
+        document.getElementById('address').value = data.address || '';
+        document.getElementById('phone').value = data.phone || '';
+        document.getElementById('rating').value = data.rating ?? '';
+        document.getElementById('price_per_night').value = data.price_per_night ?? '';
+        document.getElementById('website').value = data.website || '';
+        document.getElementById('latitude').value = data.latitude ?? '';
+        document.getElementById('longitude').value = data.longitude ?? '';
+        document.getElementById('is_accessible').checked = !!data.is_accessible;
+        
+        if (data.photo_url) {
+            photoUrlInput.value = data.photo_url;
+            currentImage.src = data.photo_url;
+            currentPhotoContainer.classList.remove('d-none');
+            deletePhotoBtn.classList.remove('d-none');
+            if (data.photo_url.startsWith('http')) photoLinkInput.value = data.photo_url;
         }
+    } catch (err) {
+        document.getElementById('formError').textContent = 'Ошибка загрузки: ' + err.message;
+        document.getElementById('formError').classList.remove('d-none');
     }
+}
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const errorDiv = document.getElementById('formError');
-        const successDiv = document.getElementById('formSuccess');
+deletePhotoBtn.addEventListener('click', () => {
+    photoUrlInput.value = '';
+    photoLinkInput.value = '';
+    photoFileInput.value = '';
+    currentImage.src = '';
+    currentPhotoContainer.classList.add('d-none');
+    deletePhotoBtn.classList.add('d-none');
+});
 
-        errorDiv.classList.add('d-none');
-        successDiv.classList.add('d-none');
+uploadPhotoBtn.addEventListener('click', async () => {
+    const file = photoFileInput.files[0];
+    if (!file) return alert('Выберите файл');
+    uploadPhotoBtn.disabled = true;
+    uploadPhotoBtn.textContent = 'Загрузка...';
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const res = await fetch('/api/upload/', { method: 'POST', headers: { 'Authorization': `Bearer ${getCookie('access_token')}` }, body: formData });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Ошибка');
+        const data = await res.json();
+        photoUrlInput.value = data.file_url;
+        currentImage.src = data.file_url;
+        currentPhotoContainer.classList.remove('d-none');
+        deletePhotoBtn.classList.remove('d-none');
+        photoLinkInput.value = '';
+        alert('Фото загружено');
+    } catch (e) { alert('❌ ' + e.message); }
+    finally { uploadPhotoBtn.disabled = false; uploadPhotoBtn.textContent = '📤 Загрузить'; }
+});
 
-        const data = {
-            is_accessible: document.getElementById('is_accessible')?.checked || false
-        };
+photoLinkInput.addEventListener('input', (e) => {
+    photoUrlInput.value = e.target.value;
+    if (e.target.value && e.target.value.startsWith('http')) {
+        currentImage.src = e.target.value;
+        currentPhotoContainer.classList.remove('d-none');
+        deletePhotoBtn.classList.remove('d-none');
+        photoFileInput.value = '';
+    }
+});
 
-        new FormData(form).forEach((value, key) => {
-            if (key !== 'is_accessible' && value) {
-                data[key] = value;
-            }
-        });
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
 
-        if (data.price) data.price = parseInt(data.price);
-        if (data.latitude) data.latitude = parseFloat(data.latitude);
-        if (data.longitude) data.longitude = parseFloat(data.longitude);
-        if (data.rating) data.rating = parseFloat(data.rating);
-
-        try {
-            let response;
-            if (isEdit) {
-                response = await fetch(`/api/accommodations/${itemId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getCookie('access_token')}`
-                    },
-                    body: JSON.stringify(data)
-                });
-            } else {
-                response = await fetch('/api/accommodations/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getCookie('access_token')}`
-                    },
-                    body: JSON.stringify(data)
-                });
-            }
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || 'Ошибка сохранения');
-            }
-
-            successDiv.classList.remove('d-none');
-            setTimeout(() => { window.location.href = '/admin/hotels'; }, 1500);
-
-        } catch (err) {
-            errorDiv.textContent = err.message;
-            errorDiv.classList.remove('d-none');
-        }
+    const data = { is_accessible: document.getElementById('is_accessible').checked };
+    
+    new FormData(form).forEach((val, key) => {
+        if (key !== 'is_accessible' && key !== 'photo_url' && val !== '') data[key] = val;
     });
+
+    data.photo_url = photoUrlInput.value.trim() === '' ? null : photoUrlInput.value;
+
+    const parseNum = (id) => {
+        const el = document.getElementById(id);
+        return el && el.value ? parseFloat(el.value) : null;
+    };
+    if (document.getElementById('rating')) data.rating = parseNum('rating');
+    if (document.getElementById('price_per_night')) data.price_per_night = parseNum('price_per_night');
+    if (document.getElementById('latitude')) data.latitude = parseNum('latitude');
+    if (document.getElementById('longitude')) data.longitude = parseNum('longitude');
+
+    try {
+        const url = isEdit ? `/api/accommodations/${itemId}` : '/api/accommodations/';
+        const res = await fetch(url, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Ошибка');
+        
+        successDiv.classList.remove('d-none');
+        setTimeout(() => window.location.href = '/admin/hotels', 1500);
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('d-none');
+    }
+});
 </script>
 {% endblock %}

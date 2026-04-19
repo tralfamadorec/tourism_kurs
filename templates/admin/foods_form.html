@@ -4,8 +4,9 @@
 {% block admin_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>{{ title }}</h2>
-    <a href="/admin/foods" class="btn btn-outline-secondary">← Назад</a>
+    <a href="/admin/foods" class="btn btn-outline-secondary">← Назад к списку</a>
 </div>
+
 <div class="card">
     <div class="card-body">
         <form id="foodForm">
@@ -13,10 +14,12 @@
                 <label for="name" class="form-label">Название *</label>
                 <input type="text" class="form-control" id="name" name="name" required>
             </div>
+
             <div class="mb-3">
                 <label for="description" class="form-label">Описание</label>
                 <textarea class="form-control" id="description" name="description" rows="3"></textarea>
             </div>
+
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label for="address" class="form-label">Адрес</label>
@@ -27,23 +30,18 @@
                     <input type="tel" class="form-control" id="phone" name="phone">
                 </div>
             </div>
+
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label for="latitude" class="form-label">Широта (Latitude)</label>
+                    <label for="latitude" class="form-label">Широта</label>
                     <input type="number" step="any" class="form-control" id="latitude" name="latitude" placeholder="56.2659">
-                    <small class="text-muted">Например: 56.2659</small>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label for="longitude" class="form-label">Долгота (Longitude)</label>
+                    <label for="longitude" class="form-label">Долгота</label>
                     <input type="number" step="any" class="form-control" id="longitude" name="longitude" placeholder="90.4969">
-                    <small class="text-muted">Например: 90.4969</small>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label for="photo_url" class="form-label">Ссылка на фото</label>
-                <input type="url" class="form-control" id="photo_url" name="photo_url">
-            </div>
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label for="cuisine" class="form-label">Тип кухни</label>
@@ -58,32 +56,45 @@
                     <input type="number" step="0.1" min="1" max="5" class="form-control" id="rating" name="rating">
                 </div>
             </div>
+
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="latitude" class="form-label">Широта</label>
-                    <input type="number" step="any" class="form-control" id="latitude" name="latitude">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="longitude" class="form-label">Долгота</label>
-                    <input type="number" step="any" class="form-control" id="longitude" name="longitude">
+                <div class="col-md-6 mb-3 d-flex align-items-end">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
+                        <label class="form-check-label" for="is_accessible">Доступно для МГН</label>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-md-6 mb-3 d-flex align-items-end">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
-                    <label class="form-check-label" for="is_accessible">
-                        Доступно для маломобильных групп (МГН)
-                    </label>
+            <!-- БЛОК ФОТО -->
+            <div class="mb-3 p-3 bg-light rounded border">
+                <label class="form-label fw-bold">Изображение</label>
+                
+                <div id="currentPhotoContainer" class="mb-3 d-none">
+                    <p class="small text-muted mb-1">Текущее изображение:</p>
+                    <img id="currentImage" src="" class="img-thumbnail mb-2" style="max-height: 150px;">
+                    <br>
+                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger">Удалить фото</button>
                 </div>
+
+                <hr>
+                <div class="mb-3">
+                    <label class="small text-muted">Загрузить с компьютера:</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="photoFile" accept="image/*">
+                        <button type="button" id="uploadPhotoBtn" class="btn btn-outline-primary">Загрузить</button>
+                    </div>
+                </div>
+                <div class="mb-0">
+                    <label class="small text-muted">Или вставьте ссылку:</label>
+                    <input type="url" class="form-control" id="photoLink" placeholder="https://...">
+                </div>
+                <input type="hidden" id="photo_url" name="photo_url">
             </div>
 
-            <div class="mb-3">
-                <label for="photo_url" class="form-label">Ссылка на фото</label>
-                <input type="url" class="form-control" id="photo_url" name="photo_url">
-            </div>
             <div id="formError" class="alert alert-danger d-none" role="alert"></div>
             <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
+
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">Сохранить</button>
                 <a href="/admin/foods" class="btn btn-outline-secondary">Отмена</a>
@@ -100,6 +111,14 @@ const form = document.getElementById('foodForm');
 const isEdit = {{ 'true' if is_edit else 'false' }};
 const itemId = {{ item_id if is_edit else 'null' }};
 
+const photoFileInput = document.getElementById('photoFile');
+const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+const photoLinkInput = document.getElementById('photoLink');
+const photoUrlInput = document.getElementById('photo_url');
+const currentPhotoContainer = document.getElementById('currentPhotoContainer');
+const currentImage = document.getElementById('currentImage');
+const deletePhotoBtn = document.getElementById('deletePhotoBtn');
+
 if (isEdit && itemId) loadFoodData(itemId);
 
 async function loadFoodData(id) {
@@ -110,17 +129,66 @@ async function loadFoodData(id) {
         document.getElementById('address').value = data.address || '';
         document.getElementById('phone').value = data.phone || '';
         document.getElementById('cuisine').value = data.cuisine || '';
-        document.getElementById('avg_price').value = data.avg_price || '';
-        document.getElementById('rating').value = data.rating || '';
-        document.getElementById('latitude').value = data.latitude || '';
-        document.getElementById('longitude').value = data.longitude || '';
+        document.getElementById('avg_price').value = data.avg_price ?? '';
+        document.getElementById('rating').value = data.rating ?? '';
+        document.getElementById('latitude').value = data.latitude ?? '';
+        document.getElementById('longitude').value = data.longitude ?? '';
         document.getElementById('is_accessible').checked = !!data.is_accessible;
-        document.getElementById('photo_url').value = data.photo_url || '';
+        
+        if (data.photo_url) {
+            photoUrlInput.value = data.photo_url;
+            currentImage.src = data.photo_url;
+            currentPhotoContainer.classList.remove('d-none');
+            deletePhotoBtn.classList.remove('d-none');
+            if (data.photo_url.startsWith('http')) photoLinkInput.value = data.photo_url;
+        }
     } catch (err) {
         document.getElementById('formError').textContent = 'Ошибка загрузки: ' + err.message;
         document.getElementById('formError').classList.remove('d-none');
     }
 }
+
+deletePhotoBtn.addEventListener('click', () => {
+    photoUrlInput.value = '';
+    photoLinkInput.value = '';
+    photoFileInput.value = '';
+    currentImage.src = '';
+    currentPhotoContainer.classList.add('d-none');
+    deletePhotoBtn.classList.add('d-none');
+});
+
+uploadPhotoBtn.addEventListener('click', async () => {
+    const file = photoFileInput.files[0];
+    if (!file) return alert('Выберите файл');
+    uploadPhotoBtn.disabled = true;
+    uploadPhotoBtn.textContent = 'Загрузка...';
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const res = await fetch('/api/upload/', { method: 'POST', headers: { 'Authorization': `Bearer ${getCookie('access_token')}` }, body: formData });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Ошибка');
+        const data = await res.json();
+        photoUrlInput.value = data.file_url;
+        currentImage.src = data.file_url;
+        currentPhotoContainer.classList.remove('d-none');
+        deletePhotoBtn.classList.remove('d-none');
+        photoLinkInput.value = '';
+        alert('Фото загружено');
+    } catch (e) { alert('❌ ' + e.message); }
+    finally { uploadPhotoBtn.disabled = false; uploadPhotoBtn.textContent = 'Загрузить'; }
+});
+
+photoLinkInput.addEventListener('input', (e) => {
+    photoUrlInput.value = e.target.value;
+    if (e.target.value && e.target.value.startsWith('http')) {
+        currentImage.src = e.target.value;
+        currentPhotoContainer.classList.remove('d-none');
+        deletePhotoBtn.classList.remove('d-none');
+        photoFileInput.value = '';
+    }
+});
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -130,51 +198,34 @@ form.addEventListener('submit', async (e) => {
     errorDiv.classList.add('d-none');
     successDiv.classList.add('d-none');
 
-    const data = {
-        is_accessible: document.getElementById('is_accessible')?.checked || false
-    };
+    const data = { is_accessible: document.getElementById('is_accessible').checked };
     
-    new FormData(form).forEach((value, key) => {
-        if (key !== 'is_accessible' && value) {
-            data[key] = value;
-        }
+    new FormData(form).forEach((val, key) => {
+        if (key !== 'is_accessible' && key !== 'photo_url' && val !== '') data[key] = val;
     });
-    
-    if (data.price) data.price = parseInt(data.price);
-    if (data.latitude) data.latitude = parseFloat(data.latitude);
-    if (data.longitude) data.longitude = parseFloat(data.longitude);
-    if (data.rating) data.rating = parseFloat(data.rating);
+
+    data.photo_url = photoUrlInput.value.trim() === '' ? null : photoUrlInput.value;
+
+    const parseNum = (id) => {
+        const el = document.getElementById(id);
+        return el && el.value ? parseFloat(el.value) : null;
+    };
+    if (document.getElementById('avg_price')) data.avg_price = parseNum('avg_price');
+    if (document.getElementById('latitude')) data.latitude = parseNum('latitude');
+    if (document.getElementById('longitude')) data.longitude = parseNum('longitude');
+    if (document.getElementById('rating')) data.rating = parseNum('rating');
 
     try {
-        let response;
-        if (isEdit) {
-            response = await fetch(`/api/foods/${itemId}`, {
-                method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getCookie('access_token')}` 
-                },
-                body: JSON.stringify(data)
-            });
-        } else {
-            response = await fetch('/api/foods/', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getCookie('access_token')}` 
-                },
-                body: JSON.stringify(data)
-            });
-        }
-
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || 'Ошибка сохранения');
-        }
-
+        const url = isEdit ? `/api/foods/${itemId}` : '/api/foods/';
+        const res = await fetch(url, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Ошибка');
+        
         successDiv.classList.remove('d-none');
-        setTimeout(() => { window.location.href = '/admin/foods'; }, 1500);
-
+        setTimeout(() => window.location.href = '/admin/foods', 1500);
     } catch (err) {
         errorDiv.textContent = err.message;
         errorDiv.classList.remove('d-none');

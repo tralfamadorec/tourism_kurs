@@ -36,7 +36,6 @@
 let allAccessibleObjects = [];
 
 async function loadAccessibleObjects() {
-    // Используем проверенную структуру массива, как в рабочем коде
     const endpoints = [
         { type: 'attraction', url: '/api/attractions/?limit=100' },
         { type: 'accommodation', url: '/api/accommodations/?limit=100' },
@@ -74,12 +73,12 @@ function renderObjects(objects) {
     }
     
     const typeLabels = {
-        attraction: 'Достопримечательность',
-        accommodation: 'Гостиница',
-        food: 'Заведение',
+        attraction: 'Культурный объект',
+        accommodation: 'Размещение',
+        food: 'Питание',
         event: 'Событие',
         route: 'Маршрут',
-        souvenir: 'Магазин'
+        souvenir: 'Сувениры'
     };
     
     objects.forEach(obj => {
@@ -88,15 +87,12 @@ function renderObjects(objects) {
         
         const typeLabel = typeLabels[obj.objType] || 'Объект';
         
-        // Формируем ссылку
         let link = `/${obj.objType === 'accommodation' ? 'hotels' : obj.objType === 'food' ? 'food' : obj.objType === 'souvenir' ? 'souvenirs' : obj.objType + 's'}/${obj.id}`;
         
-        // Единый шаблон карточки (как в других разделах)
         col.innerHTML = `
             <div class="card h-100 shadow-sm hover-shadow position-relative">
                 ${obj.photo_url ? `<img src="${obj.photo_url}" class="card-img-top" alt="${obj.name || obj.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
                 
-                <!-- Тип в правом верхнем углу -->
                 <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
                     <small class="fw-bold text-primary">${typeLabel}</small>
                 </div>

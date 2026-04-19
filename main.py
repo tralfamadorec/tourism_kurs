@@ -10,6 +10,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import Base, get_db, engine
 
+from fastapi import UploadFile, File
+from pathlib import Path
+import shutil
+import uuid
+
 from routes import attractions, auth, accommodations, events, foods, souvenirs, safety, postcards
 from routes import routes as routes_router
 
@@ -430,3 +435,39 @@ async def souvenir_detail(request: Request, item_id: int, db: AsyncSession = Dep
         "objType": "souvenir",
         "description": item.description, "photo": item.photo_url
     })
+
+# загрузка файлов
+
+# зоздаём директорию для загрузок
+UPLOAD_DIR = Path("static/uploads/images")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+@app.post("/api/upload/")
+async def upload_file(file: UploadFile = File(...)):
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400, 
+            detail="Недопустимый формат файла. Разрешены: JPEG, PNG, WebP, GIF"
+        )
+    
+    # макс 5MB
+    file_size = 0
+    chunk_size = 1024 * 1024  # 1MB
+    for chunk in file.file:
+        file_size += len(chunk)
+        if file_size > 5 * 1024 * 1024:  # 5MB
+            raise HTTPException(status_code=400, detail="Файл слишком большой (макс. 5MB)")
+    
+    # уникальное имя файла
+    file_extension = file.filename.split(".")[-1]
+    unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    with file_path.open("wb") as buffer:
+        file.file.seek(0)
+        shutil.copyfileobj(file.file, buffer)
+    
+    file_url = f"/static/uploads/images/{unique_filename}"
+    
+    return {"file_url": file_url, "filename": unique_filename}

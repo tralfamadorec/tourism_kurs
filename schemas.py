@@ -20,9 +20,18 @@ class AccommodationBase(BaseModel):
 class AccommodationCreate(AccommodationBase): 
     pass
 
-class AccommodationUpdate(AccommodationBase):
+class AccommodationUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=255)
-    is_accessible: Optional[bool] = False 
+    description: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=20)
+    website: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    rating: Optional[float] = Field(None, ge=0, le=5)
+    price_per_night: Optional[int] = None
+    is_accessible: Optional[bool] = None 
+    photo_url: Optional[str] = None
 
 class AccommodationResponse(AccommodationBase):
     id: int
@@ -37,11 +46,22 @@ class AttractionBase(BaseModel):
     address: Optional[str] = Field(None, description="Физический адрес")
     latitude: Optional[float] = Field(None, ge=-90, le=90, description="Широта (WGS84)")
     longitude: Optional[float] = Field(None, ge=-180, le=180, description="Долгота (WGS84)")
+    rating: Optional[float] = Field(None, ge=0, le=5, description="Рейтинг")
     is_accessible: Optional[bool] = False 
     photo_url: Optional[str] = Field(None, description="Ссылка на изображение")
 
 class AttractionCreate(AttractionBase):
     pass
+
+class AttractionUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=3, max_length=255)
+    description: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    rating: Optional[float] = Field(None, ge=0, le=5)
+    is_accessible: Optional[bool] = None 
+    photo_url: Optional[str] = None
 
 class AttractionResponse(AttractionBase):
     id: int
@@ -50,30 +70,26 @@ class AttractionResponse(AttractionBase):
     is_active: bool
     model_config = ConfigDict(from_attributes=True)
 
-class AttractionUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=3, max_length=255)
-    description: Optional[str] = None
-    address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    is_accessible: Optional[bool] = False 
-    photo_url: Optional[str] = None
-
 class EventBase(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)
     description: Optional[str] = None
     event_date: datetime
     location: Optional[str] = None
+    category: Optional[str] = Field(None, max_length=50)
     is_accessible: Optional[bool] = False 
     photo_url: Optional[str] = None
 
 class EventCreate(EventBase): 
     pass
 
-class EventUpdate(EventBase):
+class EventUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=255)
+    description: Optional[str] = None
     event_date: Optional[datetime] = None
-    is_accessible: Optional[bool] = False 
+    location: Optional[str] = None
+    category: Optional[str] = None
+    is_accessible: Optional[bool] = None 
+    photo_url: Optional[str] = None
 
 class EventResponse(EventBase):
     id: int
@@ -99,9 +115,19 @@ class FoodBase(BaseModel):
 class FoodCreate(FoodBase): 
     pass
 
-class FoodUpdate(FoodBase):
+class FoodUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=255)
-    is_accessible: Optional[bool] = False 
+    description: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    cuisine: Optional[str] = None
+    avg_price: Optional[int] = None
+    rating: Optional[float] = Field(None, ge=0, le=5)
+    photo_url: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    is_accessible: Optional[bool] = None
 
 class FoodResponse(FoodBase):
     id: int
@@ -140,8 +166,14 @@ class RouteBase(BaseModel):
 class RouteCreate(RouteBase): 
     pass
 
-class RouteUpdate(RouteBase):
+class RouteUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=255)
+    description: Optional[str] = None
+    duration_hours: Optional[float] = None
+    difficulty: Optional[str] = None
+    transport_type: Optional[str] = None
+    is_accessible: Optional[bool] = None 
+    photo_url: Optional[str] = None
 
 class RouteResponse(RouteBase):
     id: int
@@ -157,22 +189,26 @@ class SafetyObjectBase(BaseModel):
     phone: str = Field(..., min_length=1, max_length=20)
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    is_accessible: Optional[bool] = False
+    photo_url: Optional[str] = None
 
 class SafetyObjectCreate(SafetyObjectBase): 
     pass
-
-class SafetyObjectResponse(SafetyObjectBase):
-    id: int
-    created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
 
 class SafetyObjectUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=255)
     category: Optional[str] = Field(None, min_length=2, max_length=50)
     address: Optional[str] = None
-    phone: Optional[str] = Field(None, min_length=2, max_length=20)  # ← min_length=2!
+    phone: Optional[str] = Field(None, min_length=2, max_length=20)
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    is_accessible: Optional[bool] = None
+    photo_url: Optional[str] = None
+
+class SafetyObjectResponse(SafetyObjectBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 class SouvenirBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -190,8 +226,18 @@ class SouvenirBase(BaseModel):
 class SouvenirCreate(SouvenirBase): 
     pass
 
-class SouvenirUpdate(SouvenirBase):
+class SouvenirUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=255)
+    description: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    category: Optional[str] = None
+    working_hours: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    is_accessible: Optional[bool] = None
+    photo_url: Optional[str] = None
 
 class SouvenirResponse(SouvenirBase):
     id: int
@@ -217,7 +263,6 @@ class UserResponse(BaseModel):
     username: str
     email: str
     is_active: bool
-
     model_config = ConfigDict(from_attributes=True)
 
 class PaginatedResponse(BaseModel, Generic[T]):
