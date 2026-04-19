@@ -35,7 +35,6 @@
     </div>
 </div>
 
-<!-- Карта -->
 <div class="card shadow-sm mb-4">
     <div class="card-body p-1">
         <div id="map" style="height: 500px; border-radius: 4px;"></div>
@@ -73,7 +72,6 @@ function init() {
     });
 
     myMap.geoObjects.add(objectCollection);
-
     loadAllData();
 }
 
@@ -94,7 +92,6 @@ async function loadAllData() {
                 const response = await fetch(api.url);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                console.log(`${api.name}: загружено ${data.length} объектов`);
                 return data.map(item => ({
                     ...item,
                     objType: api.type,
@@ -109,29 +106,23 @@ async function loadAllData() {
         const results = await Promise.all(promises);
         allObjects = results.flat();
         
-        console.log(`Всего объектов: ${allObjects.length}`);
-        console.log('Объекты с координатами:', allObjects.filter(o => o.latitude && o.longitude).length);
-
         renderMap(allObjects);
-        
         renderList(allObjects);
         
         if (allObjects.length === 0) {
-            container.innerHTML = '<div class="col-12 text-center py-5 text-muted">Объекты не найдены. Проверьте, есть ли данные в базе.</div>';
+            container.innerHTML = '<div class="col-12 text-center py-5 text-muted">Объекты не найдены</div>';
         }
 
         const urlParams = new URLSearchParams(window.location.search);
         const focusParam = urlParams.get('focus');
         
         if (focusParam && allObjects.length > 0) {
-            setTimeout(() => {
-                focusOnObjectFromParam(focusParam);
-            }, 500);
+            setTimeout(() => focusOnObjectFromParam(focusParam), 500);
         }
         
     } catch (err) {
         console.error('Критическая ошибка:', err);
-        container.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка загрузки: ${err.message}</div>`;
+        container.innerHTML = `<div class="col-12 text-center text-danger py-5">Ошибка: ${err.message}</div>`;
     }
 }
 
@@ -154,13 +145,11 @@ function renderMap(objects) {
         'souvenir': 'Магазин'
     };
 
-    let markersCount = 0;
-
     objects.forEach(obj => {
-        if (!obj.latitude || !obj.longitude) {
-            console.log('Нет координат:', obj.displayName);
-            return;
-        }
+        if (!obj.latitude || !obj.longitude) return;
+
+        // Ссылка на маршрут в Яндекс.Картах
+        const routeUrl = `https://yandex.ru/maps/?rtext=~${obj.latitude},${obj.longitude}&rtt=auto`;
 
         const placemark = new ymaps.Placemark(
             [obj.latitude, obj.longitude],
@@ -169,7 +158,10 @@ function renderMap(objects) {
                 balloonContentBody: `
                     <strong>${typeLabels[obj.objType] || 'Объект'}</strong><br>
                     ${obj.address || obj.location || ''}<br>
-                    ${obj.phone ? '📞 ' + obj.phone : ''}
+                    ${obj.phone ? '📞 ' + obj.phone + '<br>' : ''}
+                    <a href="${routeUrl}" target="_blank" class="btn btn-sm btn-outline-primary mt-2" style="text-decoration: none;">
+                        Построить маршрут
+                    </a>
                 `,
                 hintContent: obj.displayName
             },
@@ -177,16 +169,10 @@ function renderMap(objects) {
         );
 
         objectCollection.add(placemark);
-        markersCount++;
     });
 
-    console.log(`Маркеров на карте: ${markersCount}`);
-
-    if (markersCount > 0) {
-        myMap.setBounds(objectCollection.getBounds(), { 
-            checkZoomRange: true, 
-            zoomMargin: 50 
-        });
+    if (objects.length > 0) {
+        myMap.setBounds(objectCollection.getBounds(), { checkZoomRange: true, zoomMargin: 50 });
     }
 }
 
@@ -207,6 +193,7 @@ function renderList(objects) {
         col.className = 'col-md-6 col-lg-4';
         
         const hasCoords = obj.latitude && obj.longitude;
+        const routeUrl = hasCoords ? `https://yandex.ru/maps/?rtext=~${obj.latitude},${obj.longitude}&rtt=auto` : '#';
         
         col.innerHTML = `
             <div class="card h-100 shadow-sm">
@@ -219,10 +206,15 @@ function renderList(objects) {
                     ${obj.phone ? `<p class="small mb-2">📞 ${obj.phone}</p>` : ''}
                     
                     ${hasCoords ? `
-                        <button onclick="focusOnObject(${obj.latitude}, ${obj.longitude})" 
-                                class="btn btn-sm btn-outline-primary w-100">
-                            Показать на карте
-                        </button>
+                        <div class="d-grid gap-2">
+                            <button onclick="focusOnObject(${obj.latitude}, ${obj.longitude})" 
+                                    class="btn btn-sm btn-outline-primary">
+                                Показать на карте
+                            </button>
+                            <a href="${routeUrl}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                Построить маршрут
+                            </a>
+                        </div>
                     ` : '<span class="badge bg-secondary">Нет координат</span>'}
                 </div>
             </div>
@@ -258,13 +250,18 @@ function focusOnObjectFromParam(focusParam) {
             'souvenir': 'islands#violetCircleIcon'
         };
         
+        const routeUrl = `https://yandex.ru/maps/?rtext=~${obj.latitude},${obj.longitude}&rtt=auto`;
+        
         const placemark = new ymaps.Placemark(
             [obj.latitude, obj.longitude],
             {
                 balloonContentHeader: obj.displayName,
                 balloonContentBody: `
                     <strong>${obj.address || obj.location || ''}</strong><br>
-                    ${obj.phone ? '📞 ' + obj.phone : ''}
+                    ${obj.phone ? '📞 ' + obj.phone + '<br>' : ''}
+                    <a href="${routeUrl}" target="_blank" class="btn btn-sm btn-outline-primary mt-2" style="text-decoration: none;">
+                        Построить маршрут
+                    </a>
                 `
             },
             { preset: presets[obj.objType] || 'islands#blueCircleIcon' }
@@ -273,26 +270,17 @@ function focusOnObjectFromParam(focusParam) {
         objectCollection.add(placemark);
         placemark.balloon.open();
         
-        // Прокручиваем к карте
         document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        // Подсвечиваем объект в списке
         document.querySelectorAll('.card').forEach(card => {
             if (card.innerHTML.includes(obj.displayName)) {
                 card.classList.add('border-primary', 'border-2');
-                setTimeout(() => {
-                    card.classList.remove('border-primary', 'border-2');
-                }, 3000);
+                setTimeout(() => card.classList.remove('border-primary', 'border-2'), 3000);
             }
         });
-        
-        console.log(`Сфокусировались на объекте: ${obj.displayName}`);
-    } else {
-        console.warn(`Объект ${focusParam} не найден или нет координат`);
     }
 }
 
-// фильтрация
 function applyFilters() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const type = document.getElementById('typeFilter').value;
