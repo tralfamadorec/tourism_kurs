@@ -2,8 +2,13 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 import os
 import httpx
+import logging
 from fastapi import HTTPException
 
 from sqlalchemy import select
@@ -17,6 +22,14 @@ import uuid
 
 from routes import attractions, auth, accommodations, events, foods, souvenirs, safety, postcards
 from routes import routes as routes_router
+from fastapi.responses import RedirectResponse
+from jose import JWTError, jwt
+from config import settings
+from limiter import limiter
+
+# базовое логирование
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("achinsk_app")
 
 app = FastAPI(
     title="Ачинск туристический",
@@ -27,11 +40,16 @@ app = FastAPI(
 # настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS.split(",") if hasattr(settings, "ALLOWED_ORIGINS") else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# подключаем лимитер к приложению
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # статика и шаблоны
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -48,6 +66,15 @@ app.include_router(souvenirs.router)
 app.include_router(safety.router)
 app.include_router(postcards.router)
 
+def require_admin_auth(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except JWTError:
+        return RedirectResponse(url="/login?error=expired", status_code=302)
+
 # веб-страницы
 @app.get("/")
 def home(request: Request):
@@ -58,16 +85,15 @@ def login_page(request: Request):
     return templates.TemplateResponse(request, "login.html", {"request": request})
 
 # админ-панель
-@app.get("/admin")
+@app.get("/admin", dependencies=[Depends(require_admin_auth)])
 def admin_dashboard(request: Request):
     return templates.TemplateResponse(request, "admin/base_admin.html", {"request": request})
 
-# достопримечательности
-@app.get("/admin/attractions")
+@app.get("/admin/attractions", dependencies=[Depends(require_admin_auth)])
 def admin_attractions_list(request: Request):
     return templates.TemplateResponse(request, "admin/attractions_list.html", {"request": request})
 
-@app.get("/admin/attractions/new")
+@app.get("/admin/attractions/new", dependencies=[Depends(require_admin_auth)])
 def admin_attractions_new(request: Request):
     return templates.TemplateResponse(request, "admin/attractions_form.html", {
         "request": request,
@@ -77,7 +103,7 @@ def admin_attractions_new(request: Request):
         "is_edit": False
     })
 
-@app.get("/admin/attractions/{item_id}/edit")
+@app.get("/admin/attractions/{item_id}/edit", dependencies=[Depends(require_admin_auth)])
 def admin_attractions_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/attractions_form.html", {
         "request": request,
@@ -88,11 +114,11 @@ def admin_attractions_edit(request: Request, item_id: int):
     })
 
 # маршруты
-@app.get("/admin/routes")
+@app.get("/admin/routes", dependencies=[Depends(require_admin_auth)])
 def admin_routes_list(request: Request):
     return templates.TemplateResponse(request, "admin/routes_list.html", {"request": request})
 
-@app.get("/admin/routes/new")
+@app.get("/admin/routes/new", dependencies=[Depends(require_admin_auth)])
 def admin_routes_new(request: Request):
     return templates.TemplateResponse(request, "admin/routes_form.html", {
         "request": request,
@@ -103,7 +129,7 @@ def admin_routes_new(request: Request):
         "item": None
     })
 
-@app.get("/admin/routes/{item_id}/edit")
+@app.get("/admin/routes/{item_id}/edit", dependencies=[Depends(require_admin_auth)])
 def admin_routes_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/routes_form.html", {
         "request": request,
@@ -114,11 +140,11 @@ def admin_routes_edit(request: Request, item_id: int):
     })
 
 # гостиницы
-@app.get("/admin/hotels")
+@app.get("/admin/hotels", dependencies=[Depends(require_admin_auth)])
 def admin_hotels_list(request: Request):
     return templates.TemplateResponse(request, "admin/hotels_list.html", {"request": request})
 
-@app.get("/admin/hotels/new")
+@app.get("/admin/hotels/new", dependencies=[Depends(require_admin_auth)])
 def admin_hotels_new(request: Request):
     return templates.TemplateResponse(request, "admin/hotels_form.html", {
         "request": request,
@@ -128,7 +154,7 @@ def admin_hotels_new(request: Request):
         "item_id": None
     })
 
-@app.get("/admin/hotels/{item_id}/edit")
+@app.get("/admin/hotels/{item_id}/edit", dependencies=[Depends(require_admin_auth)])
 def admin_hotels_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/hotels_form.html", {
         "request": request,
@@ -139,11 +165,11 @@ def admin_hotels_edit(request: Request, item_id: int):
     })
 
 # рестораны
-@app.get("/admin/foods")
+@app.get("/admin/foods", dependencies=[Depends(require_admin_auth)])
 def admin_food_list(request: Request):
     return templates.TemplateResponse(request, "admin/foods_list.html", {"request": request})
 
-@app.get("/admin/foods/new")
+@app.get("/admin/foods/new", dependencies=[Depends(require_admin_auth)])
 def admin_food_new(request: Request):
     return templates.TemplateResponse(request, "admin/foods_form.html", {
         "request": request,
@@ -153,7 +179,7 @@ def admin_food_new(request: Request):
         "item_id": None
     })
 
-@app.get("/admin/foods/{item_id}/edit")
+@app.get("/admin/foods/{item_id}/edit", dependencies=[Depends(require_admin_auth)])
 async def admin_food_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/foods_form.html", {
         "request": request,
@@ -164,11 +190,11 @@ async def admin_food_edit(request: Request, item_id: int):
     })
 
 # события
-@app.get("/admin/events")
+@app.get("/admin/events", dependencies=[Depends(require_admin_auth)])
 def admin_events_list(request: Request):
     return templates.TemplateResponse(request, "admin/events_list.html", {"request": request})
 
-@app.get("/admin/events/new")
+@app.get("/admin/events/new", dependencies=[Depends(require_admin_auth)])
 def admin_events_new(request: Request):
     return templates.TemplateResponse(request, "admin/events_form.html", {
         "request": request,
@@ -178,7 +204,7 @@ def admin_events_new(request: Request):
         "item_id": None
     })
 
-@app.get("/admin/events/{item_id}/edit")
+@app.get("/admin/events/{item_id}/edit", dependencies=[Depends(require_admin_auth)])
 def admin_events_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/events_form.html", {
         "request": request,
@@ -189,11 +215,11 @@ def admin_events_edit(request: Request, item_id: int):
     })
 
 # сувениры
-@app.get("/admin/souvenirs")
+@app.get("/admin/souvenirs", dependencies=[Depends(require_admin_auth)])
 def admin_souvenirs_list(request: Request):
     return templates.TemplateResponse(request, "admin/souvenirs_list.html", {"request": request})
 
-@app.get("/admin/souvenirs/new")
+@app.get("/admin/souvenirs/new", dependencies=[Depends(require_admin_auth)])
 def admin_souvenirs_new(request: Request):
     return templates.TemplateResponse(request, "admin/souvenirs_form.html", {
         "request": request,
@@ -203,7 +229,7 @@ def admin_souvenirs_new(request: Request):
         "item_id": None
     })
 
-@app.get("/admin/souvenirs/{item_id}/edit")
+@app.get("/admin/souvenirs/{item_id}/edit", dependencies=[Depends(require_admin_auth)])
 def admin_souvenirs_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/souvenirs_form.html", {
         "request": request,
@@ -214,11 +240,11 @@ def admin_souvenirs_edit(request: Request, item_id: int):
     })
 
 # безопасность
-@app.get("/admin/safety")
+@app.get("/admin/safety", dependencies=[Depends(require_admin_auth)])
 def admin_safety_list(request: Request):
     return templates.TemplateResponse(request, "admin/safety_list.html", {"request": request})
 
-@app.get("/admin/safety/new")
+@app.get("/admin/safety/new", dependencies=[Depends(require_admin_auth)])
 def admin_safety_new(request: Request):
     return templates.TemplateResponse(request, "admin/safety_form.html", {
         "request": request,
@@ -228,7 +254,7 @@ def admin_safety_new(request: Request):
         "item_id": None
     })
 
-@app.get("/admin/safety/{item_id}/edit")
+@app.get("/admin/safety/{item_id}/edit", dependencies=[Depends(require_admin_auth)])
 def admin_safety_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/safety_form.html", {
         "request": request,
@@ -239,11 +265,11 @@ def admin_safety_edit(request: Request, item_id: int):
     })
 
 # открытки
-@app.get("/admin/postcards")
+@app.get("/admin/postcards", dependencies=[Depends(require_admin_auth)])
 def admin_postcards_list(request: Request):
     return templates.TemplateResponse(request, "admin/postcards_list.html", {"request": request})
 
-@app.get("/admin/postcards/new")
+@app.get("/admin/postcards/new", dependencies=[Depends(require_admin_auth)])
 def admin_postcards_new(request: Request):
     return templates.TemplateResponse(request, "admin/postcards_form.html", {
         "request": request,
@@ -253,7 +279,7 @@ def admin_postcards_new(request: Request):
         "item_id": None
     })
 
-@app.get("/admin/postcards/{item_id}/edit")
+@app.get("/admin/postcards/{item_id}/edit", dependencies=[Depends(require_admin_auth)])
 def admin_postcards_edit(request: Request, item_id: int):
     return templates.TemplateResponse(request, "admin/postcards_form.html", {
         "request": request,
@@ -442,8 +468,15 @@ async def souvenir_detail(request: Request, item_id: int, db: AsyncSession = Dep
 UPLOAD_DIR = Path("static/uploads/images")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
 @app.post("/api/upload/")
 async def upload_file(file: UploadFile = File(...)):
+    # проверка расширения файла
+    file_ext = Path(file.filename or "").suffix.lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Недопустимый формат файла")
+    
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
     if file.content_type not in allowed_types:
         raise HTTPException(
@@ -471,3 +504,25 @@ async def upload_file(file: UploadFile = File(...)):
     file_url = f"/static/uploads/images/{unique_filename}"
     
     return {"file_url": file_url, "filename": unique_filename}
+
+# единый обработчик ошибок
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    titles = {
+        400: "Некорректный запрос",
+        401: "Требуется авторизация",
+        403: "Доступ запрещен",
+        404: "Страница не найдена",
+        422: "Ошибка валидации данных",
+        500: "Внутренняя ошибка сервера"
+    }
+    return templates.TemplateResponse(
+        request, "error.html",
+        {
+            "request": request,
+            "status_code": exc.status_code,
+            "title": titles.get(exc.status_code, "Произошла ошибка"),
+            "message": exc.detail if isinstance(exc.detail, str) else "Неизвестная ошибка"
+        },
+        status_code=exc.status_code
+    )

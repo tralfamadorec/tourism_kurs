@@ -12,11 +12,11 @@
                 <form id="loginForm">
                     <div class="mb-3">
                         <label for="username" class="form-label">Имя пользователя</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <input type="text" class="form-control" id="username" name="username" required autocomplete="username">
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Пароль</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
                     </div>
                     <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
                     <button type="submit" class="btn btn-primary w-100">Войти</button>
@@ -45,7 +45,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const result = await login(username, password);
     
     if (result.success) {
-        window.location.href = '/';
+        const urlParams = new URLSearchParams(window.location.search);
+        const next = urlParams.get('next') || '/';
+        window.location.href = next;
     } else {
         errorDiv.textContent = result.error;
         errorDiv.classList.remove('d-none');

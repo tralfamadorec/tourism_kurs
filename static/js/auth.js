@@ -25,29 +25,24 @@ function updateAuthUI() {
     const userStatus = document.getElementById('userStatus');
     const adminBtn = document.getElementById('adminBtn');
     
-    console.log('updateAuthUI вызван. adminBtn найден:', !!adminBtn);
-
     if (isAuthenticated()) {
-        authBtn.textContent = 'Выход';
-        authBtn.href = '#';
-        authBtn.onclick = (e) => { e.preventDefault(); logout(); };
-        userStatus.textContent = 'Вы вошли как администратор';
-        
+        if (authBtn) {
+            authBtn.textContent = 'Выход';
+            authBtn.href = '#';
+            authBtn.onclick = (e) => { e.preventDefault(); logout(); };
+        }
+        if (userStatus) userStatus.textContent = 'Вы вошли как администратор';
         if (adminBtn) adminBtn.classList.remove('d-none');
-        console.log('Кнопка админки должна быть видна');
     } else {
-        authBtn.textContent = 'Вход';
-        authBtn.href = '/login';
-        authBtn.onclick = null;
-        userStatus.textContent = '';
-        
+        if (authBtn) {
+            authBtn.textContent = 'Вход';
+            authBtn.href = '/login';
+            authBtn.onclick = null;
+        }
+        if (userStatus) userStatus.textContent = '';
         if (adminBtn) adminBtn.classList.add('d-none');
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    updateAuthUI();
-});
 
 // вход/выход
 async function login(username, password) {
@@ -97,7 +92,7 @@ async function apiRequest(url, options = {}) {
     const response = await fetch(url, { ...options, headers });
     
     if (response.status === 401 && token) {
-        // Токен истёк — выходим
+        // токен истёк — выходим
         logout();
         throw new Error('Сессия истекла, выполните вход повторно');
     }
@@ -111,6 +106,4 @@ async function apiRequest(url, options = {}) {
 }
 
 // инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    updateAuthUI();
-});
+document.addEventListener('DOMContentLoaded', updateAuthUI);
