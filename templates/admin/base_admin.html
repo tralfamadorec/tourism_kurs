@@ -5,19 +5,21 @@
 {% block content %}
 <div class="row">
     <div class="col-md-3 col-lg-2 mb-4">
-        <div class="list-group">
-            <a href="/admin" class="list-group-item list-group-item-action active">Панель управления</a>
-            <a href="/admin/attractions" class="list-group-item list-group-item-action">Достопримечательности</a>
-            <a href="/admin/hotels" class="list-group-item list-group-item-action">Размещение</a>
-            <a href="/admin/events" class="list-group-item list-group-item-action">События</a>
-            <a href="/admin/foods" class="list-group-item list-group-item-action">Питание</a>
-            <a href="/admin/postcards" class="list-group-item list-group-item-action">Шаблоны открыток</a>
-            <a href="/admin/routes" class="list-group-item list-group-item-action">Маршруты</a>
-            <a href="/admin/safety" class="list-group-item list-group-item-action">Безопасность</a>
-            <a href="/admin/souvenirs" class="list-group-item list-group-item-action">Сувениры</a>
-            <hr>
-            <a href="/" class="list-group-item list-group-item-action text-muted">На сайт</a>
-            <a href="#" onclick="logout(); return false;" class="list-group-item list-group-item-action text-danger">Выйти</a>
+        <div class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="/admin" class="admin-nav__link {{ 'active' if request.url.path == '/admin' else '' }}">Панель управления</a>
+                <a href="/admin/attractions" class="admin-nav__link {{ 'active' if request.url.path.startswith('/admin/attractions') else '' }}">Культурные объекты</a>
+                <a href="/admin/hotels" class="admin-nav__link {{ 'active' if request.url.path.startswith('/admin/hotels') else '' }}">Размещение</a>
+                <a href="/admin/events" class="admin-nav__link {{ 'active' if request.url.path.startswith('/admin/events') else '' }}">События</a>
+                <a href="/admin/foods" class="admin-nav__link {{ 'active' if request.url.path.startswith('/admin/foods') else '' }}">Питание</a>
+                <a href="/admin/postcards" class="admin-nav__link {{ 'active' if request.url.path.startswith('/admin/postcards') else '' }}">Шаблоны открыток</a>
+                <a href="/admin/routes" class="admin-nav__link {{ 'active' if request.url.path.startswith('/admin/routes') else '' }}">Маршруты</a>
+                <a href="/admin/safety" class="admin-nav__link {{ 'active' if request.url.path.startswith('/admin/safety') else '' }}">Безопасность</a>
+                <a href="/admin/souvenirs" class="admin-nav__link {{ 'active' if request.url.path.startswith('/admin/souvenirs') else '' }}">Сувениры</a>
+                <hr class="admin-nav__divider">
+                <a href="/" class="admin-nav__link admin-nav__link--muted">На сайт</a>
+                <a href="#" onclick="logout(); return false;" class="admin-nav__link admin-nav__link--danger">Выйти</a>
+            </nav>
         </div>
     </div>
 

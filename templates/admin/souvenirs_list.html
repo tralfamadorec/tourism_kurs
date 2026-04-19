@@ -3,44 +3,38 @@
 {% block title %}Управление сувенирными магазинами{% endblock %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="admin-header d-flex justify-content-between align-items-center">
     <h2>Сувенирные магазины</h2>
     <a href="/admin/souvenirs/new" class="btn btn-primary">➕ Добавить магазин</a>
 </div>
 
-<div class="card shadow-sm mb-4">
-    <div class="card-body py-2">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию, адресу или категории...">
-            </div>
-            <div class="col-md-6 text-end">
-                <small class="text-muted">Найдено: <span id="countBadge">0</span></small>
-            </div>
+<div class="search-bar">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию, адресу или категории...">
+        </div>
+        <div class="col-md-6 text-end">
+            <span class="badge-count">Найдено: <span id="countBadge">0</span></span>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Название</th>
-                        <th style="width: 120px;">Тип</th>
-                        <th>Адрес</th>
-                        <th style="width: 120px;">Телефон</th>
-                        <th style="width: 130px;">Режим работы</th>
-                        <th class="text-end" style="width: 100px;">Действия</th>
-                    </tr>
-                </thead>
-                <tbody id="souvenirsTable">
-                    <tr><td colspan="6" class="text-center py-4">Загрузка данных...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+<div class="admin-table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th class="col-type">Тип</th>
+                <th>Адрес</th>
+                <th class="col-phone">Телефон</th>
+                <th class="col-working-hours">Режим работы</th>
+                <th class="col-actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody id="souvenirsTable">
+            <tr><td colspan="6" class="empty-table-message">Загрузка данных...</td></tr>
+        </tbody>
+    </table>
 </div>
 {% endblock %}
 
@@ -62,7 +56,7 @@ async function loadSouvenirs() {
     } catch (err) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-danger py-4">
+                <td colspan="6" class="error-table-message">
                     <p>Ошибка загрузки: ${err.message}</p>
                     <button onclick="loadSouvenirs()" class="btn btn-sm btn-outline-danger">Повторить</button>
                 </td>
@@ -74,7 +68,7 @@ function renderSouvenirsTable(items) {
     const tbody = document.getElementById('souvenirsTable');
     
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Нет записей</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-table-message">Нет записей</td></tr>';
         return;
     }
     
@@ -86,13 +80,13 @@ function renderSouvenirsTable(items) {
             <tr>
                 <td>
                     <strong>${item.name}</strong>
-                    <br><small class="text-muted">${shortDesc}${descSuffix}</small>
+                    <span class="table-description">${shortDesc}${descSuffix}</span>
                 </td>
                 <td>${item.category || '—'}</td>
                 <td>${item.address || '—'}</td>
                 <td>${item.phone || '—'}</td>
                 <td>${item.working_hours || '—'}</td>
-                <td class="text-end">
+                <td class="action-buttons">
                     <a href="/admin/souvenirs/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
                     <button onclick="deleteSouvenir(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
                 </td>

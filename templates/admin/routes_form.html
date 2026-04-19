@@ -3,7 +3,7 @@
 {% block title %}{{ 'Редактировать' if is_edit else 'Новый' }} маршрут{% endblock %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="admin-header d-flex justify-content-between align-items-center">
     <h2>{{ title }}</h2>
     <a href="/admin/routes" class="btn btn-outline-secondary">← Назад к списку</a>
 </div>
@@ -11,79 +11,86 @@
 <div class="card">
     <div class="card-body">
         <form id="routeForm">
-            <div class="mb-3">
-                <label for="title" class="form-label">Название маршрута *</label>
+            <div class="form-group">
+                <label for="title">Название маршрута *</label>
                 <input type="text" class="form-control" id="title" name="title" required>
             </div>
 
-            <div class="mb-3">
-                <label for="description" class="form-label">Описание</label>
+            <div class="form-group">
+                <label for="description">Описание</label>
                 <textarea class="form-control" id="description" name="description" rows="4"></textarea>
             </div>
 
             <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label for="duration_hours" class="form-label">Длительность (часов)</label>
-                    <input type="number" step="0.5" class="form-control" id="duration_hours" name="duration_hours">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="duration_hours">Длительность (часов)</label>
+                        <input type="number" step="0.5" class="form-control route-duration-input" id="duration_hours" name="duration_hours">
+                    </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label for="difficulty" class="form-label">Сложность</label>
-                    <select class="form-select" id="difficulty" name="difficulty">
-                        <option value="">Выберите...</option>
-                        <option value="Лёгкий">Лёгкий</option>
-                        <option value="Средний">Средний</option>
-                        <option value="Сложный">Сложный</option>
-                    </select>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="difficulty">Сложность</label>
+                        <select class="form-select" id="difficulty" name="difficulty">
+                            <option value="">Выберите...</option>
+                            <option value="Лёгкий">Лёгкий</option>
+                            <option value="Средний">Средний</option>
+                            <option value="Сложный">Сложный</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label for="transport_type" class="form-label">Транспорт</label>
-                    <select class="form-select" id="transport_type" name="transport_type">
-                        <option value="">Выберите...</option>
-                        <option value="Пешком">Пешком</option>
-                        <option value="Автомобиль">Автомобиль</option>
-                        <option value="Автобус">Автобус</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3 d-flex align-items-end">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
-                        <label class="form-check-label" for="is_accessible">Доступно для МГН</label>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="transport_type">Транспорт</label>
+                        <select class="form-select" id="transport_type" name="transport_type">
+                            <option value="">Выберите...</option>
+                            <option value="Пешком">Пешком</option>
+                            <option value="Автомобиль">Автомобиль</option>
+                            <option value="Автобус">Автобус</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-3 p-3 bg-light rounded border">
-                <label class="form-label fw-bold">Изображение</label>
+            <div class="row">
+                <div class="col-md-6 d-flex align-items-end">
+                    <label class="form-check-accessible">
+                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
+                        <span class="form-check-label">Доступно для МГН</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="photo-upload-block">
+                <h4>Изображение</h4>
                 
-                <div id="currentPhotoContainer" class="mb-3 d-none">
-                    <p class="small text-muted mb-1">Текущее изображение:</p>
-                    <img id="currentImage" src="" class="img-thumbnail mb-2" style="max-height: 150px;">
-                    <br>
-                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger">Удалить фото</button>
+                <div id="currentPhotoContainer" class="current-photo-preview d-none">
+                    <p class="small text-muted mb-3">Текущее изображение:</p>
+                    <img id="currentImage" src="" alt="Текущее фото"><br>
+                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger mt-3">Удалить фото</button>
                 </div>
 
                 <hr>
-                <div class="mb-3">
-                    <label class="small text-muted">Загрузить с компьютера:</label>
+                <div class="photo-upload-section">
+                    <label>Загрузить с компьютера:</label>
                     <div class="input-group">
                         <input type="file" class="form-control" id="photoFile" accept="image/*">
                         <button type="button" id="uploadPhotoBtn" class="btn btn-outline-primary">Загрузить</button>
                     </div>
                 </div>
-                <div class="mb-0">
-                    <label class="small text-muted">Или вставьте ссылку:</label>
+                
+                <div class="photo-upload-section">
+                    <label>Или вставьте ссылку:</label>
                     <input type="url" class="form-control" id="photoLink" placeholder="https://...">
                 </div>
+                
                 <input type="hidden" id="photo_url" name="photo_url">
             </div>
 
             <div id="formError" class="alert alert-danger d-none" role="alert"></div>
             <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Сохранить</button>
                 <a href="/admin/routes" class="btn btn-outline-secondary">Отмена</a>
             </div>
@@ -164,7 +171,6 @@ uploadPhotoBtn.addEventListener('click', async () => {
     finally { uploadPhotoBtn.disabled = false; uploadPhotoBtn.textContent = 'Загрузить'; }
 });
 
-// Ввод ссылки
 photoLinkInput.addEventListener('input', (e) => {
     photoUrlInput.value = e.target.value;
     if (e.target.value && e.target.value.startsWith('http')) {

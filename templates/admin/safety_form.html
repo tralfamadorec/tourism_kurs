@@ -3,7 +3,7 @@
 {% block title %}{{ 'Редактировать' if is_edit else 'Новая' }} запись безопасности{% endblock %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="admin-header d-flex justify-content-between align-items-center">
     <h2>{{ title }}</h2>
     <a href="/admin/safety" class="btn btn-outline-secondary">← Назад к справочнику</a>
 </div>
@@ -11,84 +11,93 @@
 <div class="card">
     <div class="card-body">
         <form id="safetyForm">
-            <div class="mb-3">
-                <label for="name" class="form-label">Название организации *</label>
+            <div class="form-group">
+                <label for="name">Название организации *</label>
                 <input type="text" class="form-control" id="name" name="name" required>
             </div>
 
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="category" class="form-label">Категория *</label>
-                    <select class="form-select" id="category" name="category" required>
-                        <option value="">Выберите категорию...</option>
-                        <option value="Полиция">Полиция</option>
-                        <option value="МЧС">МЧС</option>
-                        <option value="Скорая помощь">Скорая помощь</option>
-                        <option value="Медицина">Медицинское учреждение</option>
-                        <option value="Аптека">Аптека</option>
-                        <option value="Другое">Другое</option>
-                    </select>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="category">Категория *</label>
+                        <select class="form-select safety-category-select" id="category" name="category" required>
+                            <option value="">Выберите категорию...</option>
+                            <option value="Полиция">Полиция</option>
+                            <option value="МЧС">МЧС</option>
+                            <option value="Скорая помощь">Скорая помощь</option>
+                            <option value="Медицина">Медицинское учреждение</option>
+                            <option value="Аптека">Аптека</option>
+                            <option value="Другое">Другое</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label for="phone" class="form-label">Телефон *</label>
-                    <input type="tel" class="form-control" id="phone" name="phone" required>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label for="address" class="form-label">Адрес</label>
-                <input type="text" class="form-control" id="address" name="address">
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="latitude" class="form-label">Широта</label>
-                    <input type="number" step="any" class="form-control" id="latitude" name="latitude">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="longitude" class="form-label">Долгота</label>
-                    <input type="number" step="any" class="form-control" id="longitude" name="longitude">
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3 d-flex align-items-end">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
-                        <label class="form-check-label" for="is_accessible">Доступно для МГН</label>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="phone">Телефон *</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-3 p-3 bg-light rounded border">
-                <label class="form-label fw-bold">Изображение</label>
+            <div class="form-group">
+                <label for="address">Адрес</label>
+                <input type="text" class="form-control" id="address" name="address">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="latitude">Широта</label>
+                        <input type="number" step="any" class="form-control" id="latitude" name="latitude">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="longitude">Долгота</label>
+                        <input type="number" step="any" class="form-control" id="longitude" name="longitude">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 d-flex align-items-end">
+                    <label class="form-check-accessible">
+                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
+                        <span class="form-check-label">Доступно для МГН</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="photo-upload-block">
+                <h4>Изображение</h4>
                 
-                <div id="currentPhotoContainer" class="mb-3 d-none">
-                    <p class="small text-muted mb-1">Текущее изображение:</p>
-                    <img id="currentImage" src="" class="img-thumbnail mb-2" style="max-height: 150px;">
-                    <br>
-                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger">❌ Удалить фото</button>
+                <div id="currentPhotoContainer" class="current-photo-preview d-none">
+                    <p class="small text-muted mb-3">Текущее изображение:</p>
+                    <img id="currentImage" src="" alt="Текущее фото"><br>
+                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger mt-3">❌ Удалить фото</button>
                 </div>
 
                 <hr>
-                <div class="mb-3">
-                    <label class="small text-muted">Загрузить с компьютера:</label>
+                <div class="photo-upload-section">
+                    <label>Загрузить с компьютера:</label>
                     <div class="input-group">
                         <input type="file" class="form-control" id="photoFile" accept="image/*">
                         <button type="button" id="uploadPhotoBtn" class="btn btn-outline-primary">📤 Загрузить</button>
                     </div>
                 </div>
-                <div class="mb-0">
-                    <label class="small text-muted">Или вставьте ссылку:</label>
+                
+                <div class="photo-upload-section">
+                    <label>Или вставьте ссылку:</label>
                     <input type="url" class="form-control" id="photoLink" placeholder="https://...">
                 </div>
+                
                 <input type="hidden" id="photo_url" name="photo_url">
             </div>
 
             <div id="formError" class="alert alert-danger d-none" role="alert"></div>
             <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Сохранить</button>
                 <a href="/admin/safety" class="btn btn-outline-secondary">Отмена</a>
             </div>

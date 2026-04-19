@@ -2,7 +2,7 @@
 {% block title %}{{ 'Редактировать' if is_edit else 'Новый' }} шаблон открытки{% endblock %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="admin-header d-flex justify-content-between align-items-center">
     <h2>{{ title }}</h2>
     <a href="/admin/postcards" class="btn btn-outline-secondary">← Назад</a>
 </div>
@@ -10,33 +10,32 @@
 <div class="card">
     <div class="card-body">
         <form id="postcardForm">
-            <div class="mb-3">
-                <label for="title" class="form-label">Название шаблона *</label>
+            <div class="form-group">
+                <label for="title">Название шаблона *</label>
                 <input type="text" class="form-control" id="title" name="title" required>
             </div>
 
-            <div class="mb-3 p-3 bg-light rounded border">
-                <label class="form-label fw-bold">Изображение открытки *</label>
+            <div class="photo-upload-block">
+                <h4>Изображение открытки *</h4>
                 
-                <div id="currentImageContainer" class="mb-3 d-none">
-                    <p class="small text-muted mb-1">Текущее изображение:</p>
-                    <img id="currentImage" src="" class="img-thumbnail mb-2" style="max-height: 150px;">
-                    <br>
-                    <button type="button" id="deleteImageBtn" class="btn btn-sm btn-outline-danger">Удалить изображение</button>
+                <div id="currentImageContainer" class="current-photo-preview d-none">
+                    <p class="small text-muted mb-3">Текущее изображение:</p>
+                    <img id="currentImage" src="" alt="Текущее изображение"><br>
+                    <button type="button" id="deleteImageBtn" class="btn btn-sm btn-outline-danger mt-3">Удалить изображение</button>
                 </div>
 
                 <hr>
 
-                <div class="mb-3">
-                    <label class="small text-muted">Загрузить с компьютера:</label>
+                <div class="photo-upload-section">
+                    <label>Загрузить с компьютера:</label>
                     <div class="input-group">
                         <input type="file" class="form-control" id="imageFile" accept="image/*">
                         <button type="button" id="uploadImageBtn" class="btn btn-outline-primary">Загрузить</button>
                     </div>
                 </div>
 
-                <div class="mb-0">
-                    <label class="small text-muted">Или вставьте ссылку:</label>
+                <div class="photo-upload-section">
+                    <label>Или вставьте ссылку:</label>
                     <input type="url" class="form-control" id="imageLink" placeholder="https://...">
                 </div>
 
@@ -44,15 +43,15 @@
                 <small class="form-text text-muted">Изображение обязательно для создания шаблона</small>
             </div>
 
-            <div class="mb-3">
-                <label for="description" class="form-label">Описание</label>
+            <div class="form-group">
+                <label for="description">Описание</label>
                 <textarea class="form-control" id="description" name="description" rows="3"></textarea>
             </div>
 
             <div id="formError" class="alert alert-danger d-none" role="alert"></div>
             <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Сохранить</button>
                 <a href="/admin/postcards" class="btn btn-outline-secondary">Отмена</a>
             </div>

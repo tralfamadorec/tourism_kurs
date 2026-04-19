@@ -3,7 +3,7 @@
 {% block title %}{{ 'Редактировать' if is_edit else 'Новый' }} сувенир{% endblock %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="admin-header d-flex justify-content-between align-items-center">
     <h2>{{ title }}</h2>
     <a href="/admin/souvenirs" class="btn btn-outline-secondary">← Назад к списку</a>
 </div>
@@ -11,82 +11,91 @@
 <div class="card">
     <div class="card-body">
         <form id="souvenirForm">
-            <div class="mb-3">
-                <label for="name" class="form-label">Название магазина *</label>
+            <div class="form-group">
+                <label for="name">Название магазина *</label>
                 <input type="text" class="form-control" id="name" name="name" required>
             </div>
 
-            <div class="mb-3">
-                <label for="description" class="form-label">Описание / Ассортимент</label>
+            <div class="form-group">
+                <label for="description">Описание / Ассортимент</label>
                 <textarea class="form-control" id="description" name="description" rows="3" placeholder="Что продают в магазине..."></textarea>
             </div>
 
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="category" class="form-label">Тип магазина</label>
-                    <select id="category" name="category" class="form-select">
-                        <option value="">Не выбран</option>
-                        <option value="Сувенирная лавка">Сувенирная лавка</option>
-                        <option value="Мастерская">Мастерская</option>
-                        <option value="Галерея">Галерея</option>
-                        <option value="Торговый центр">Торговый центр</option>
-                    </select>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="category">Тип магазина</label>
+                        <select id="category" name="category" class="form-select souvenir-category-select">
+                            <option value="">Не выбран</option>
+                            <option value="Сувенирная лавка">Сувенирная лавка</option>
+                            <option value="Мастерская">Мастерская</option>
+                            <option value="Галерея">Галерея</option>
+                            <option value="Торговый центр">Торговый центр</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label for="working_hours" class="form-label">Режим работы</label>
-                    <input type="text" class="form-control" id="working_hours" name="working_hours" placeholder="Пн-Вс 10:00-20:00">
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="phone" class="form-label">Телефон</label>
-                    <input type="text" class="form-control" id="phone" name="phone" placeholder="+7 (___) ___-__-__">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="website" class="form-label">Сайт</label>
-                    <input type="url" class="form-control" id="website" name="website" placeholder="https://...">
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3 d-flex align-items-end">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
-                        <label class="form-check-label" for="is_accessible">Доступно для МГН</label>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="working_hours">Режим работы</label>
+                        <input type="text" class="form-control" id="working_hours" name="working_hours" placeholder="Пн-Вс 10:00-20:00">
                     </div>
                 </div>
             </div>
 
-            <div class="mb-3 p-3 bg-light rounded border">
-                <label class="form-label fw-bold">Изображение</label>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="phone">Телефон</label>
+                        <input type="text" class="form-control" id="phone" name="phone" placeholder="+7 (___) ___-__-__">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="website">Сайт</label>
+                        <input type="url" class="form-control" id="website" name="website" placeholder="https://...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 d-flex align-items-end">
+                    <label class="form-check-accessible">
+                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
+                        <span class="form-check-label">Доступно для МГН</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="photo-upload-block">
+                <h4>Изображение</h4>
                 
-                <div id="currentPhotoContainer" class="mb-3 d-none">
-                    <p class="small text-muted mb-1">Текущее изображение:</p>
-                    <img id="currentImage" src="" class="img-thumbnail mb-2" style="max-height: 150px;">
-                    <br>
-                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger">Удалить фото</button>
+                <div id="currentPhotoContainer" class="current-photo-preview d-none">
+                    <p class="small text-muted mb-3">Текущее изображение:</p>
+                    <img id="currentImage" src="" alt="Текущее фото"><br>
+                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger mt-3">Удалить фото</button>
                 </div>
 
                 <hr>
-                <div class="mb-3">
-                    <label class="small text-muted">Загрузить с компьютера:</label>
+                <div class="photo-upload-section">
+                    <label>Загрузить с компьютера:</label>
                     <div class="input-group">
                         <input type="file" class="form-control" id="photoFile" accept="image/*">
                         <button type="button" id="uploadPhotoBtn" class="btn btn-outline-primary">Загрузить</button>
                     </div>
                 </div>
-                <div class="mb-0">
-                    <label class="small text-muted">Или вставьте ссылку:</label>
+                
+                <div class="photo-upload-section">
+                    <label>Или вставьте ссылку:</label>
                     <input type="url" class="form-control" id="photoLink" placeholder="https://...">
                 </div>
+                
                 <input type="hidden" id="photo_url" name="photo_url">
             </div>
 
             <div id="formError" class="alert alert-danger d-none" role="alert"></div>
             <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Сохранить</button>
                 <a href="/admin/souvenirs" class="btn btn-outline-secondary">Отмена</a>
             </div>

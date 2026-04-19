@@ -3,43 +3,37 @@
 {% block title %}Справочник безопасности{% endblock %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="admin-header d-flex justify-content-between align-items-center">
     <h2>Экстренные службы и медицинские учреждения</h2>
     <a href="/admin/safety/new" class="btn btn-primary">➕ Добавить запись</a>
 </div>
 
-<div class="card shadow-sm mb-4">
-    <div class="card-body py-2">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию, адресу или категории...">
-            </div>
-            <div class="col-md-6 text-end">
-                <small class="text-muted">Найдено: <span id="countBadge">0</span></small>
-            </div>
+<div class="search-bar">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию, адресу или категории...">
+        </div>
+        <div class="col-md-6 text-end">
+            <span class="badge-count">Найдено: <span id="countBadge">0</span></span>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Название</th>
-                        <th style="width: 150px;">Категория</th>
-                        <th style="width: 120px;">Телефон</th>
-                        <th>Адрес</th>
-                        <th class="text-end" style="width: 100px;">Действия</th>
-                    </tr>
-                </thead>
-                <tbody id="safetyTable">
-                    <tr><td colspan="5" class="text-center py-4">Загрузка данных...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+<div class="admin-table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th class="col-category">Категория</th>
+                <th class="col-phone">Телефон</th>
+                <th>Адрес</th>
+                <th class="col-actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody id="safetyTable">
+            <tr><td colspan="5" class="empty-table-message">Загрузка данных...</td></tr>
+        </tbody>
+    </table>
 </div>
 {% endblock %}
 
@@ -61,7 +55,7 @@ async function loadSafetyObjects() {
     } catch (err) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center text-danger py-4">
+                <td colspan="5" class="error-table-message">
                     <p>Ошибка загрузки: ${err.message}</p>
                     <button onclick="loadSafetyObjects()" class="btn btn-sm btn-outline-danger">Повторить</button>
                 </td>
@@ -73,17 +67,17 @@ function renderSafetyTable(items) {
     const tbody = document.getElementById('safetyTable');
     
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Нет записей</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-table-message">Нет записей</td></tr>';
         return;
     }
     
     tbody.innerHTML = items.map(item => `
         <tr>
             <td><strong>${item.name}</strong></td>
-            <td><span class="badge bg-secondary">${item.category || '—'}</span></td>
-            <td><a href="tel:${item.phone}" class="text-decoration-none">${item.phone || '—'}</a></td>
+            <td><span class="badge-category">${item.category || '—'}</span></td>
+            <td><a href="tel:${item.phone}" class="phone-link">${item.phone || '—'}</a></td>
             <td>${item.address || '—'}</td>
-            <td class="text-end">
+            <td class="action-buttons">
                 <a href="/admin/safety/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
                 <button onclick="deleteSafety(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
             </td>

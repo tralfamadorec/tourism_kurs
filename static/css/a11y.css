@@ -1,0 +1,226 @@
+/* static/css/a11y.css — максимальное упрощение по ГОСТ Р 52872-2019 */
+
+/* Базовые настройки для всех схем доступности */
+[class^="a11y-"] {
+    font-size: 20px !important;
+    font-family: Arial, Tahoma, sans-serif !important;
+    line-height: 1.8 !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* Скрываем ВСЕ изображения */
+[class^="a11y-"] img,
+[class^="a11y-"] picture,
+[class^="a11y-"] video,
+[class^="a11y-"] iframe {
+    display: none !important;
+}
+
+/* Упрощаем карточки — убираем тени, скругления */
+[class^="a11y-"] .card {
+    border: 2px solid currentColor !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    margin-bottom: 20px !important;
+}
+
+[class^="a11y-"] .card-body {
+    padding: 15px !important;
+}
+
+/* Убираем все декоративные элементы */
+[class^="a11y-"] .shadow,
+[class^="a11y-"] .shadow-sm,
+[class^="a11y-"] .shadow-lg {
+    box-shadow: none !important;
+}
+
+[class^="a11y-"] .rounded,
+[class^="a11y-"] .rounded-top,
+[class^="a11y-"] .rounded-bottom {
+    border-radius: 0 !important;
+}
+
+/* Схема 1: Чёрный на белом */
+body.a11y-bw {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+body.a11y-bw a { color: #000000 !important; text-decoration: underline !important; }
+body.a11y-bw .btn { 
+    border: 2px solid #000000 !important; 
+    color: #000000 !important; 
+    background: #ffffff !important; 
+    padding: 10px 20px !important;
+    border-radius: 0 !important;
+}
+body.a11y-bw .form-control,
+body.a11y-bw .form-select {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    font-size: 20px !important;
+    padding: 10px !important;
+    border-radius: 0 !important;
+}
+
+/* Схема 2: Белый на чёрном */
+body.a11y-wb {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+body.a11y-wb a { color: #ffffff !important; text-decoration: underline !important; }
+body.a11y-wb .btn { 
+    border: 2px solid #ffffff !important; 
+    color: #ffffff !important; 
+    background: #000000 !important;
+    padding: 10px 20px !important;
+    border-radius: 0 !important;
+}
+body.a11y-wb .form-control,
+body.a11y-wb .form-select {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    font-size: 20px !important;
+    padding: 10px !important;
+    border-radius: 0 !important;
+}
+
+/* Схема 3: Тёмно-синий на голубом */
+body.a11y-blue {
+    background-color: #99ccff !important;
+    color: #000066 !important;
+}
+body.a11y-blue a { color: #000066 !important; text-decoration: underline !important; }
+body.a11y-blue .btn { 
+    border: 2px solid #000066 !important; 
+    color: #000066 !important; 
+    background: #99ccff !important;
+    padding: 10px 20px !important;
+    border-radius: 0 !important;
+}
+body.a11y-blue .form-control,
+body.a11y-blue .form-select {
+    background-color: #99ccff !important;
+    color: #000066 !important;
+    border: 2px solid #000066 !important;
+    font-size: 20px !important;
+    padding: 10px !important;
+    border-radius: 0 !important;
+}
+
+/* Схема 4: Коричневый на бежевом */
+body.a11y-brown {
+    background-color: #f5f5dc !important;
+    color: #4e381a !important;
+}
+body.a11y-brown a { color: #4e381a !important; text-decoration: underline !important; }
+body.a11y-brown .btn { 
+    border: 2px solid #4e381a !important; 
+    color: #4e381a !important; 
+    background: #f5f5dc !important;
+    padding: 10px 20px !important;
+    border-radius: 0 !important;
+}
+body.a11y-brown .form-control,
+body.a11y-brown .form-select {
+    background-color: #f5f5dc !important;
+    color: #4e381a !important;
+    border: 2px solid #4e381a !important;
+    font-size: 20px !important;
+    padding: 10px !important;
+    border-radius: 0 !important;
+}
+
+/* Схема 5: Зелёный на тёмно-коричневом */
+body.a11y-green {
+    background-color: #3b2b1a !important;
+    color: #00ff00 !important;
+}
+body.a11y-green a { color: #00ff00 !important; text-decoration: underline !important; }
+body.a11y-green .btn { 
+    border: 2px solid #00ff00 !important; 
+    color: #00ff00 !important; 
+    background: #3b2b1a !important;
+    padding: 10px 20px !important;
+    border-radius: 0 !important;
+}
+body.a11y-green .form-control,
+body.a11y-green .form-select {
+    background-color: #3b2b1a !important;
+    color: #00ff00 !important;
+    border: 2px solid #00ff00 !important;
+    font-size: 20px !important;
+    padding: 10px !important;
+    border-radius: 0 !important;
+}
+
+/* Упрощаем навигацию */
+[class^="a11y-"] .navbar {
+    border-bottom: 2px solid currentColor !important;
+    padding: 15px 0 !important;
+}
+
+[class^="a11y-"] .nav-link {
+    padding: 10px 15px !important;
+    border: 1px solid currentColor !important;
+    margin: 5px !important;
+    border-radius: 0 !important;
+}
+
+/* Упрощаем таблицы */
+[class^="a11y-"] .table {
+    border: 2px solid currentColor !important;
+    border-collapse: collapse !important;
+}
+
+[class^="a11y-"] .table th,
+[class^="a11y-"] .table td {
+    border: 1px solid currentColor !important;
+    padding: 10px !important;
+}
+
+/* Заголовки */
+[class^="a11y-"] h1,
+[class^="a11y-"] h2,
+[class^="a11y-"] h3,
+[class^="a11y-"] h4,
+[class^="a11y-"] h5,
+[class^="a11y-"] h6 {
+    font-weight: bold !important;
+    margin: 1.5em 0 0.8em !important;
+    border-bottom: 2px solid currentColor !important;
+    padding-bottom: 5px !important;
+}
+
+/* Ссылки и кнопки */
+[class^="a11y-"] a:hover,
+[class^="a11y-"] a:focus {
+    text-decoration: underline !important;
+    outline: 3px solid currentColor !important;
+    outline-offset: 2px !important;
+}
+
+[class^="a11y-"] :focus-visible {
+    outline: 3px solid currentColor !important;
+    outline-offset: 2px !important;
+}
+
+/* Убираем лишние декорации */
+[class^="a11y-"] .badge,
+[class^="a11y-"] .alert {
+    border: 2px solid currentColor !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 8px 12px !important;
+}
+
+/* Футер */
+[class^="a11y-"] .footer,
+[class^="a11y-"] footer {
+    border-top: 2px solid currentColor !important;
+    padding: 20px 0 !important;
+    margin-top: 40px !important;
+}
