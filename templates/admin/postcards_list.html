@@ -1,10 +1,25 @@
 {% extends "admin/base_admin.html" %}
 {% block title %}Управление шаблонами открыток{% endblock %}
+
 {% block admin_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Шаблоны открыток</h2>
+    <h2>Управление шаблонами открыток</h2>
     <a href="/admin/postcards/new" class="btn btn-primary">➕ Добавить шаблон</a>
 </div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию...">
+            </div>
+            <div class="col-md-6 text-end">
+                <small class="text-muted">Найдено: <span id="countBadge">0</span></small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">
@@ -12,8 +27,8 @@
                 <thead class="table-light">
                     <tr>
                         <th>Название</th>
-                        <th>Изображение</th>
-                        <th class="text-end">Действия</th>
+                        <th style="width: 200px;">Изображение</th>
+                        <th class="text-end" style="width: 100px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="postcardsTable">
@@ -24,38 +39,93 @@
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 {{ super() }}
 <script>
+let allPostcards = [];
+
 async function loadPostcards() {
     const tbody = document.getElementById('postcardsTable');
+    const countBadge = document.getElementById('countBadge');
+    
     try {
         const data = await apiRequest('/api/postcards/?limit=100');
-        if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4">Нет шаблонов</td></tr>';
-            return;
-        }
-        tbody.innerHTML = data.map(item => `
+        allPostcards = data;
+        renderPostcardsTable(data);
+        countBadge.textContent = data.length;
+        
+    } catch (err) {
+        tbody.innerHTML = `
             <tr>
-                <td><strong>${item.title}</strong><br><small class="text-muted">${item.description || ''}</small></td>
-                <td><code>${item.image_url}</code></td>
+                <td colspan="3" class="text-center text-danger py-4">
+                    <p>Ошибка загрузки: ${err.message}</p>
+                    <button onclick="loadPostcards()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
+    }
+}
+
+function renderPostcardsTable(items) {
+    const tbody = document.getElementById('postcardsTable');
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Нет записей</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = items.map(item => {
+        const shortDesc = (item.description || '').substring(0, 40);
+        const descSuffix = item.description?.length > 40 ? '...' : '';
+        
+        return `
+            <tr>
+                <td>
+                    <strong>${item.title}</strong>
+                    <br><small class="text-muted">${shortDesc}${descSuffix}</small>
+                </td>
+                <td>
+                    ${item.image_url 
+                        ? `<img src="${item.image_url}" alt="" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">`
+                        : '<span class="text-muted small">—</span>'}
+                </td>
                 <td class="text-end">
                     <a href="/admin/postcards/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
                     <button onclick="deletePostcard(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
                 </td>
             </tr>
-        `).join('');
-    } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">Ошибка: ${err.message}</td></tr>`;
-    }
+        `;
+    }).join('');
 }
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (!query) {
+        renderPostcardsTable(allPostcards);
+        document.getElementById('countBadge').textContent = allPostcards.length;
+        return;
+    }
+    
+    const filtered = allPostcards.filter(item => 
+        item.title?.toLowerCase().includes(query) || 
+        item.description?.toLowerCase().includes(query)
+    );
+    
+    renderPostcardsTable(filtered);
+    document.getElementById('countBadge').textContent = filtered.length;
+});
+
 async function deletePostcard(id) {
     if (!confirm('Удалить этот шаблон?')) return;
+    
     try {
         await apiRequest(`/api/postcards/${id}`, { method: 'DELETE' });
         loadPostcards();
-    } catch (err) { alert('Ошибка: ' + err.message); }
+    } catch (err) {
+        alert('Ошибка удаления: ' + err.message);
+    }
 }
+
 document.addEventListener('DOMContentLoaded', loadPostcards);
 </script>
 {% endblock %}

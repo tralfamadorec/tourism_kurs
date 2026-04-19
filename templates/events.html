@@ -111,7 +111,6 @@ async function loadEvents(append = false) {
             const col = document.createElement('div');
             col.className = 'col-md-6 col-lg-4';
             
-            // Форматируем дату: "15 мая, 19:00"
             let dateStr = 'Дата не указана';
             if (event.event_date) {
                 const d = new Date(event.event_date);
@@ -159,12 +158,12 @@ async function loadEvents(append = false) {
     }
 }
 
-// Обработчики фильтров
+// обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadEvents(); });
 document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
 document.getElementById('locationFilter').addEventListener('input', () => { currentPage = 1; loadEvents(); });
 
-// Сортировка
+// сортировка
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
@@ -175,7 +174,7 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
-// Сброс
+// сброс
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('categoryFilter').value = '';
@@ -189,13 +188,13 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     loadEvents();
 });
 
-// Подгрузка
+// подгрузка
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadEvents(true);
 });
 
-// Старт
+// старт
 document.addEventListener('DOMContentLoaded', () => loadEvents());
 </script>
 

@@ -186,7 +186,7 @@ async function loadFoods(append = false) {
     }
 }
 
-// Инициализация обработчиков
+// инициализация обработчиков
 const searchInput = document.getElementById('searchInput');
 const typeFilter = document.getElementById('typeFilter');
 const accessibilityFilter = document.getElementById('accessibilityFilter');
@@ -197,7 +197,7 @@ if (searchInput) searchInput.addEventListener('input', () => { currentPage = 1; 
 if (typeFilter) typeFilter.addEventListener('change', () => { currentPage = 1; loadFoods(); });
 if (accessibilityFilter) accessibilityFilter.addEventListener('change', () => { currentPage = 1; loadFoods(); });
 
-// Сортировка
+// сортировка
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
@@ -208,7 +208,7 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
-// Сброс
+// сброс
 if (resetBtn) {
     resetBtn.addEventListener('click', () => {
         if (searchInput) searchInput.value = '';
@@ -225,7 +225,7 @@ if (resetBtn) {
     });
 }
 
-// Подгрузка
+// подгрузка
 if (loadMoreBtn) {
     loadMoreBtn.addEventListener('click', () => {
         currentPage++;
@@ -233,7 +233,7 @@ if (loadMoreBtn) {
     });
 }
 
-// Старт
+// старт
 document.addEventListener('DOMContentLoaded', () => loadFoods());
 </script>
 

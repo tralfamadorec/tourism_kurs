@@ -110,7 +110,7 @@ async function loadUpcomingEvents() {
     const container = document.getElementById('upcomingEvents');
     
     try {
-        // Запрашиваем 3 ближайших события
+        // запрашиваем 3 ближайших события
         const response = await fetch('/api/events/?limit=3&sort=date_asc');
         const events = await response.json();
         
@@ -119,7 +119,7 @@ async function loadUpcomingEvents() {
             return;
         }
         
-        // Генерируем карточки
+        // генерируем карточки
         container.innerHTML = events.map(event => `
             <div class="col-md-4">
                 <div class="card h-100">

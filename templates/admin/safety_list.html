@@ -8,6 +8,19 @@
     <a href="/admin/safety/new" class="btn btn-primary">➕ Добавить запись</a>
 </div>
 
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию, адресу или категории...">
+            </div>
+            <div class="col-md-6 text-end">
+                <small class="text-muted">Найдено: <span id="countBadge">0</span></small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">
@@ -15,10 +28,10 @@
                 <thead class="table-light">
                     <tr>
                         <th>Название</th>
-                        <th>Категория</th>
-                        <th>Телефон</th>
+                        <th style="width: 150px;">Категория</th>
+                        <th style="width: 120px;">Телефон</th>
                         <th>Адрес</th>
-                        <th class="text-end">Действия</th>
+                        <th class="text-end" style="width: 100px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="safetyTable">
@@ -33,43 +46,72 @@
 {% block scripts %}
 {{ super() }}
 <script>
+let allSafetyObjects = [];
+
 async function loadSafetyObjects() {
     const tbody = document.getElementById('safetyTable');
+    const countBadge = document.getElementById('countBadge');
+    
     try {
         const data = await apiRequest('/api/safety/?limit=100');
+        allSafetyObjects = data;
+        renderSafetyTable(data);
+        countBadge.textContent = data.length;
         
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Нет записей в справочнике</td></tr>';
-            return;
-        }
-
-        const icons = {
-            'Полиция': '👮',
-            'МЧС': '🚒',
-            'Медицина': '🏥',
-            'Аптека': '💊',
-            'Скорая помощь': '🚑'
-        };
-
-        tbody.innerHTML = data.map(item => `
-            <tr>
-                <td><strong>${icons[item.category] || '📍'} ${item.name}</strong></td>
-                <td><span class="badge bg-info text-dark">${item.category}</span></td>
-                <td><a href="tel:${item.phone}" class="text-decoration-none">${item.phone}</a></td>
-                <td>${item.address || '—'}</td>
-                <td class="text-end">
-                    <a href="/admin/safety/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
-                    <button onclick="deleteSafety(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
-                </td>
-            </tr>
-        `).join('');
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Ошибка загрузки: ${err.message}</td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-danger py-4">
+                    <p>Ошибка загрузки: ${err.message}</p>
+                    <button onclick="loadSafetyObjects()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
     }
 }
 
+function renderSafetyTable(items) {
+    const tbody = document.getElementById('safetyTable');
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Нет записей</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = items.map(item => `
+        <tr>
+            <td><strong>${item.name}</strong></td>
+            <td><span class="badge bg-secondary">${item.category || '—'}</span></td>
+            <td><a href="tel:${item.phone}" class="text-decoration-none">${item.phone || '—'}</a></td>
+            <td>${item.address || '—'}</td>
+            <td class="text-end">
+                <a href="/admin/safety/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                <button onclick="deleteSafety(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (!query) {
+        renderSafetyTable(allSafetyObjects);
+        document.getElementById('countBadge').textContent = allSafetyObjects.length;
+        return;
+    }
+    
+    const filtered = allSafetyObjects.filter(item => 
+        item.name?.toLowerCase().includes(query) || 
+        item.address?.toLowerCase().includes(query) ||
+        item.category?.toLowerCase().includes(query)
+    );
+    
+    renderSafetyTable(filtered);
+    document.getElementById('countBadge').textContent = filtered.length;
+});
+
 async function deleteSafety(id) {
     if (!confirm('Удалить эту запись из справочника?')) return;
+    
     try {
         await apiRequest(`/api/safety/${id}`, { method: 'DELETE' });
         loadSafetyObjects();

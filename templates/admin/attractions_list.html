@@ -1,11 +1,24 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Управление достопримечательностями{% endblock %}
+{% block title %}Управление культурными объектами{% endblock %}
 
 {% block admin_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Достопримечательности</h2>
+    <h2>Управление культурными объектами</h2>
     <a href="/admin/attractions/new" class="btn btn-primary">➕ Добавить</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию или адресу...">
+            </div>
+            <div class="col-md-6 text-end">
+                <small class="text-muted">Найдено: <span id="countBadge">0</span></small>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card">
@@ -14,12 +27,12 @@
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Фото</th>
+                        <th style="width: 60px;">Фото</th>
                         <th>Название</th>
                         <th>Адрес</th>
-                        <th>Рейтинг</th>
-                        <th>Доступность</th>
-                        <th class="text-end">Действия</th>
+                        <th style="width: 100px;">Рейтинг</th>
+                        <th style="width: 90px;">Доступность</th>
+                        <th class="text-end" style="width: 100px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="attractionsTable">
@@ -34,52 +47,96 @@
 {% block scripts %}
 {{ super() }}
 <script>
+let allAttractions = [];
+
 async function loadAttractionsAdmin() {
     const tbody = document.getElementById('attractionsTable');
+    const countBadge = document.getElementById('countBadge');
     
     try {
         const data = await apiRequest('/api/attractions/?limit=100');
-        
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Нет записей</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = data.map(item => {
-            // Звёздочки рейтинга
-            const stars = '★'.repeat(Math.round(item.rating || 0)) + '☆'.repeat(5 - Math.round(item.rating || 0));
-            
-            return `
-                <tr>
-                    <td>
-                        ${item.photo_url 
-                            ? `<img src="${item.photo_url}" alt="" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">`
-                            : '<span class="text-muted small">Нет</span>'}
-                    </td>
-                    <td><strong>${item.name}</strong><br><small class="text-muted">${(item.description || '').substring(0, 40)}${item.description?.length > 40 ? '...' : ''}</small></td>
-                    <td>${item.address || '—'}</td>
-                    <td><span class="text-warning">${item.rating ? item.rating.toFixed(1) + ' ' + stars : '—'}</span></td>
-                    <td>${item.is_accessible ? '<span class="badge bg-success">♿ Да</span>' : '<span class="badge bg-secondary">Нет</span>'}</td>
-                    <td class="text-end">
-                        <a href="/admin/attractions/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
-                        <button onclick="deleteAttraction(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        allAttractions = data;
+        renderAttractionsTable(data);
+        countBadge.textContent = data.length;
         
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Ошибка: ${err.message}</td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-danger py-4">
+                    <p>Ошибка загрузки: ${err.message}</p>
+                    <button onclick="loadAttractionsAdmin()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
     }
 }
 
+function renderAttractionsTable(items) {
+    const tbody = document.getElementById('attractionsTable');
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Нет записей</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = items.map(item => {
+        const rating = item.rating ?? 0;
+        const ratingText = rating > 0 ? rating.toFixed(1) : '—';
+        
+        const shortDesc = (item.description || '').substring(0, 40);
+        const descSuffix = item.description?.length > 40 ? '...' : '';
+        
+        return `
+            <tr>
+                <td>
+                    ${item.photo_url 
+                        ? `<img src="${item.photo_url}" alt="" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">`
+                        : '<span class="text-muted small">—</span>'}
+                </td>
+                <td>
+                    <strong>${item.name}</strong>
+                    <br><small class="text-muted">${shortDesc}${descSuffix}</small>
+                </td>
+                <td>${item.address || '—'}</td>
+                <td><span class="text-warning">${ratingText}</span></td>
+                <td>
+                    ${item.is_accessible 
+                        ? '<span class="badge bg-success">Да</span>' 
+                        : '<span class="badge bg-secondary">Нет</span>'}
+                </td>
+                <td class="text-end">
+                    <a href="/admin/attractions/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deleteAttraction(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (!query) {
+        renderAttractionsTable(allAttractions);
+        document.getElementById('countBadge').textContent = allAttractions.length;
+        return;
+    }
+    
+    const filtered = allAttractions.filter(item => 
+        item.name?.toLowerCase().includes(query) || 
+        item.address?.toLowerCase().includes(query)
+    );
+    
+    renderAttractionsTable(filtered);
+    document.getElementById('countBadge').textContent = filtered.length;
+});
+
 async function deleteAttraction(id) {
     if (!confirm('Удалить эту достопримечательность?')) return;
+    
     try {
         await apiRequest(`/api/attractions/${id}`, { method: 'DELETE' });
         loadAttractionsAdmin();
     } catch (err) {
-        alert('Ошибка: ' + err.message);
+        alert('Ошибка удаления: ' + err.message);
     }
 }
 

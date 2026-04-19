@@ -159,12 +159,12 @@ async function loadHotels(append = false) {
     }
 }
 
-// Обработчики фильтров
+// обработчики фильтров
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadHotels(); });
 document.getElementById('priceFilter').addEventListener('change', () => { currentPage = 1; loadHotels(); });
 document.getElementById('ratingFilter').addEventListener('change', () => { currentPage = 1; loadHotels(); });
 
-// Сортировка
+// сортировка
 document.querySelectorAll('[data-sort]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
@@ -175,7 +175,7 @@ document.querySelectorAll('[data-sort]').forEach(btn => {
     });
 });
 
-// Сброс
+// сброс
 document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('priceFilter').value = '';
@@ -189,13 +189,13 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     loadHotels();
 });
 
-// Подгрузка
+// подгрузка
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     currentPage++;
     loadHotels(true);
 });
 
-// Старт
+// старт
 document.addEventListener('DOMContentLoaded', () => loadHotels());
 </script>
 

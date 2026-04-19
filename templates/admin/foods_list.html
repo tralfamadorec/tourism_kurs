@@ -1,10 +1,23 @@
 {% extends "admin/base_admin.html" %}
-{% block title %}Управление ресторанами{% endblock %}
+{% block title %}Управление питанием{% endblock %}
 
 {% block admin_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Рестораны и кафе</h2>
+    <h2>Управление питанием</h2>
     <a href="/admin/foods/new" class="btn btn-primary">➕ Добавить заведение</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию или адресу...">
+            </div>
+            <div class="col-md-6 text-end">
+                <small class="text-muted">Найдено: <span id="countBadge">0</span></small>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card">
@@ -13,14 +26,14 @@
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Фото</th>
+                        <th style="width: 60px;">Фото</th>
                         <th>Название</th>
-                        <th>Кухня</th>
+                        <th style="width: 120px;">Кухня</th>
                         <th>Адрес</th>
-                        <th>Рейтинг</th>
-                        <th>Ср. чек</th>
-                        <th>Доступность</th>
-                        <th class="text-end">Действия</th>
+                        <th style="width: 80px;">Рейтинг</th>
+                        <th style="width: 90px;">Ср. чек</th>
+                        <th style="width: 90px;">Доступность</th>
+                        <th class="text-end" style="width: 100px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="foodsTable">
@@ -35,53 +48,92 @@
 {% block scripts %}
 {{ super() }}
 <script>
+let allFoods = [];
+
 async function loadFoods() {
     const tbody = document.getElementById('foodsTable');
+    const countBadge = document.getElementById('countBadge');
+    
     try {
         const data = await apiRequest('/api/foods/?limit=100');
-        
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">Нет записей</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = data.map(item => {
-            // Звёздочки рейтинга
-            const stars = '★'.repeat(Math.round(item.rating || 0)) + '☆'.repeat(5 - Math.round(item.rating || 0));
-            
-            return `
-                <tr>
-                    <td>
-                        ${item.photo_url 
-                            ? `<img src="${item.photo_url}" alt="" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">`
-                            : '<span class="text-muted small">Нет</span>'}
-                    </td>
-                    <td><strong>${item.name}</strong></td>
-                    <td><span class="badge bg-secondary">${item.cuisine || '—'}</span></td>
-                    <td>${item.address || '—'}</td>
-                    <td><span class="text-warning">${item.rating ? item.rating.toFixed(1) + ' ' + stars : '—'}</span></td>
-                    <td>${item.avg_price ? item.avg_price + ' ₽' : '—'}</td>
-                    <td>${item.is_accessible ? '<span class="badge bg-success">♿ Да</span>' : '<span class="badge bg-secondary">Нет</span>'}</td>
-                    <td class="text-end">
-                        <a href="/admin/foods/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
-                        <button onclick="deleteFood(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        allFoods = data;
+        renderFoodsTable(data);
+        countBadge.textContent = data.length;
         
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Ошибка: ${err.message}</td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-danger py-4">
+                    <p>Ошибка загрузки: ${err.message}</p>
+                    <button onclick="loadFoods()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
     }
 }
 
+function renderFoodsTable(items) {
+    const tbody = document.getElementById('foodsTable');
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Нет записей</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = items.map(item => {
+        const ratingText = item.rating ? item.rating.toFixed(1) : '—';
+        
+        return `
+            <tr>
+                <td>
+                    ${item.photo_url 
+                        ? `<img src="${item.photo_url}" alt="" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">`
+                        : '<span class="text-muted small">—</span>'}
+                </td>
+                <td><strong>${item.name}</strong></td>
+                <td><span class="badge bg-secondary">${item.cuisine || '—'}</span></td>
+                <td>${item.address || '—'}</td>
+                <td><span class="text-warning">${ratingText}</span></td>
+                <td>${item.avg_price ? item.avg_price + ' ₽' : '—'}</td>
+                <td>
+                    ${item.is_accessible 
+                        ? '<span class="badge bg-success">Да</span>' 
+                        : '<span class="badge bg-secondary">Нет</span>'}
+                </td>
+                <td class="text-end">
+                    <a href="/admin/foods/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deleteFood(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (!query) {
+        renderFoodsTable(allFoods);
+        document.getElementById('countBadge').textContent = allFoods.length;
+        return;
+    }
+    
+    const filtered = allFoods.filter(item => 
+        item.name?.toLowerCase().includes(query) || 
+        item.address?.toLowerCase().includes(query) ||
+        item.cuisine?.toLowerCase().includes(query)
+    );
+    
+    renderFoodsTable(filtered);
+    document.getElementById('countBadge').textContent = filtered.length;
+});
+
 async function deleteFood(id) {
     if (!confirm('Удалить это заведение?')) return;
+    
     try {
         await apiRequest(`/api/foods/${id}`, { method: 'DELETE' });
         loadFoods();
     } catch (err) {
-        alert('Ошибка: ' + err.message);
+        alert('Ошибка удаления: ' + err.message);
     }
 }
 

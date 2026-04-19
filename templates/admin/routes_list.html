@@ -4,8 +4,21 @@
 
 {% block admin_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Туристические маршруты</h2>
+    <h2>Управление маршрутами</h2>
     <a href="/admin/routes/new" class="btn btn-primary">➕ Добавить маршрут</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию...">
+            </div>
+            <div class="col-md-6 text-end">
+                <small class="text-muted">Найдено: <span id="countBadge">0</span></small>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card">
@@ -15,10 +28,10 @@
                 <thead class="table-light">
                     <tr>
                         <th>Название</th>
-                        <th>Длительность</th>
-                        <th>Сложность</th>
-                        <th>Транспорт</th>
-                        <th class="text-end">Действия</th>
+                        <th style="width: 100px;">Длительность</th>
+                        <th style="width: 100px;">Сложность</th>
+                        <th style="width: 100px;">Транспорт</th>
+                        <th class="text-end" style="width: 100px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="routesTable">
@@ -33,20 +46,49 @@
 {% block scripts %}
 {{ super() }}
 <script>
+let allRoutes = [];
+
 async function loadRoutes() {
     const tbody = document.getElementById('routesTable');
+    const countBadge = document.getElementById('countBadge');
+    
     try {
         const data = await apiRequest('/api/routes/?limit=100');
+        allRoutes = data;
+        renderRoutesTable(data);
+        countBadge.textContent = data.length;
         
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Нет созданных маршрутов</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = data.map(route => `
+    } catch (err) {
+        tbody.innerHTML = `
             <tr>
-                <td><strong>${route.title}</strong><br><small class="text-muted">${route.description?.substring(0, 50)}...</small></td>
-                <td>${route.duration_hours || '—'} ч.</td>
+                <td colspan="5" class="text-center text-danger py-4">
+                    <p>Ошибка загрузки: ${err.message}</p>
+                    <button onclick="loadRoutes()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
+    }
+}
+
+function renderRoutesTable(items) {
+    const tbody = document.getElementById('routesTable');
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Нет записей</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = items.map(route => {
+        const shortDesc = (route.description || '').substring(0, 40);
+        const descSuffix = route.description?.length > 40 ? '...' : '';
+        const duration = route.duration_hours ? route.duration_hours + ' ч.' : '—';
+        
+        return `
+            <tr>
+                <td>
+                    <strong>${route.title}</strong>
+                    <br><small class="text-muted">${shortDesc}${descSuffix}</small>
+                </td>
+                <td>${duration}</td>
                 <td><span class="badge bg-secondary">${route.difficulty || '—'}</span></td>
                 <td>${route.transport_type || '—'}</td>
                 <td class="text-end">
@@ -54,14 +96,30 @@ async function loadRoutes() {
                     <button onclick="deleteRoute(${route.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
                 </td>
             </tr>
-        `).join('');
-    } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Ошибка загрузки: ${err.message}</td></tr>`;
-    }
+        `;
+    }).join('');
 }
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (!query) {
+        renderRoutesTable(allRoutes);
+        document.getElementById('countBadge').textContent = allRoutes.length;
+        return;
+    }
+    
+    const filtered = allRoutes.filter(item => 
+        item.title?.toLowerCase().includes(query) || 
+        item.description?.toLowerCase().includes(query)
+    );
+    
+    renderRoutesTable(filtered);
+    document.getElementById('countBadge').textContent = filtered.length;
+});
 
 async function deleteRoute(id) {
     if (!confirm('Удалить этот маршрут?')) return;
+    
     try {
         await apiRequest(`/api/routes/${id}`, { method: 'DELETE' });
         loadRoutes();
