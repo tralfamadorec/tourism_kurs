@@ -1,0 +1,531 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Управление сотрудниками{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center mb-4">
+    <h2>Управление сотрудниками</h2>
+</div>
+
+<div class="admin-card mb-4">
+    <div class="admin-card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" 
+                       placeholder="Имя, email или роль...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Роль</label>
+                <select id="roleFilter" class="form-select form-select-sm">
+                    <option value="">Все роли</option>
+                    <option value="super_admin">Супер-админ</option>
+                    <option value="admin">Админ</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Статус</label>
+                <select id="statusFilter" class="form-select form-select-sm">
+                    <option value="">Активные</option>
+                    <option value="approved">Одобренные</option>
+                    <option value="pending">Ожидают</option>
+                    <option value="inactive">Неактивные/Удалённые</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">
+                    <i class="bi bi-x-circle me-1"></i>Сбросить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="admin-table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th class="col-photo">Фото</th>
+                <th>Пользователь</th>
+                <th>Email</th>
+                <th>Роль</th>
+                <th>Статус</th>
+                <th>Дата регистрации</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody id="usersTable">
+            <tr><td colspan="7" class="text-center py-4">Загрузка...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Изменить права доступа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="roleForm">
+                    <input type="hidden" id="modalUserId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Роль</label>
+                        <select id="modalRole" class="form-select" required>
+                            <option value="admin">Админ</option>
+                            <option value="super_admin">Супер-админ</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Статус одобрения</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="modalApproved">
+                            <label class="form-check-label" for="modalApproved">
+                                Аккаунт одобрен и может входить
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveRoleBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-key me-1"></i>Сброс пароля</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="resetUserId">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Новый пароль будет показан один раз. Сохраните его и передайте сотруднику!
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Новый пароль</label>
+                    <input type="text" class="form-control" id="newPassword" 
+                           placeholder="Введите новый пароль или оставьте пустым для автогенерации">
+                    <small class="text-muted">Оставьте пустым для генерации случайного пароля</small>
+                    <div id="passwordRequirements" class="mt-2 small text-muted d-none">
+                        <div id="reqLength" class="text-danger"><i class="bi bi-x-circle me-1"></i>Минимум 8 символов</div>
+                        <div id="reqUpper" class="text-danger"><i class="bi bi-x-circle me-1"></i>Заглавная буква (A-Z)</div>
+                        <div id="reqLower" class="text-danger"><i class="bi bi-x-circle me-1"></i>Строчная буква (a-z)</div>
+                        <div id="reqDigit" class="text-danger"><i class="bi bi-x-circle me-1"></i>Цифра (0-9)</div>
+                    </div>
+                </div>
+                <div id="generatedPassword" class="alert alert-success d-none">
+                    <strong><i class="bi bi-lock me-1"></i>Сгенерированный пароль:</strong><br>
+                    <code id="passwordCode" class="fs-5 d-block mt-2 p-2 bg-white rounded"></code>
+                    <small class="text-muted">Нажмите "Сбросить пароль", чтобы применить</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-warning" id="generatePasswordBtn">
+                    <i class="bi bi-shuffle me-1"></i>Сгенерировать
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmResetBtn" disabled>
+                    <i class="bi bi-key me-1"></i>Сбросить пароль
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let allUsers = [];
+let currentUserId = {{ request.state.current_user_id | default(0) }};
+const roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
+const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+
+function getAuthToken() {
+    return localStorage.getItem('access_token') || 
+           (typeof getCookie === 'function' ? getCookie('access_token') : null);
+}
+
+function generatePassword() {
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const digits = '0123456789';
+    const special = '!@#$%';
+    const all = upper + lower + digits + special;
+    
+    let password = [
+        upper[Math.floor(Math.random() * upper.length)],
+        lower[Math.floor(Math.random() * lower.length)],
+        digits[Math.floor(Math.random() * digits.length)],
+        special[Math.floor(Math.random() * special.length)]
+    ];
+    
+    for (let i = 4; i < 12; i++) {
+        password.push(all[Math.floor(Math.random() * all.length)]);
+    }
+    
+    return password.sort(() => Math.random() - 0.5).join('');
+}
+
+function validatePassword(password) {
+    const requirements = {
+        length: password.length >= 8,
+        upper: /[A-Z]/.test(password),
+        lower: /[a-z]/.test(password),
+        digit: /\d/.test(password)
+    };
+    
+    const isValid = Object.values(requirements).every(v => v);
+    
+    updateRequirementIndicator('reqLength', requirements.length);
+    updateRequirementIndicator('reqUpper', requirements.upper);
+    updateRequirementIndicator('reqLower', requirements.lower);
+    updateRequirementIndicator('reqDigit', requirements.digit);
+    
+    return isValid;
+}
+
+function updateRequirementIndicator(id, met) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = met ? 'text-success' : 'text-danger';
+    const text = el.textContent.trim().substring(1);
+    el.innerHTML = met ? '<i class="bi bi-check-circle me-1"></i>' + text : '<i class="bi bi-x-circle me-1"></i>' + text;
+}
+
+async function loadUsers() {
+    const tbody = document.getElementById('usersTable');
+    const token = getAuthToken();
+    
+    if (!token) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Ошибка: не найден токен авторизации</td></tr>';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/users/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: 'Ошибка сервера' }));
+            throw new Error(err.detail || `HTTP ${response.status}`);
+        }
+        
+        allUsers = await response.json();
+        applyFilters(); // Применяем фильтры сразу после загрузки
+        
+    } catch (err) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-danger py-4">
+                    <p>Ошибка: ${err.message}</p>
+                    <button onclick="loadUsers()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
+    }
+}
+
+function getInitials(username, email) {
+    if (username && username.length > 0) {
+        return username.charAt(0).toUpperCase();
+    }
+    if (email && email.length > 0) {
+        return email.charAt(0).toUpperCase();
+    }
+    return '?';
+}
+
+function renderUsersTable(users) {
+    const tbody = document.getElementById('usersTable');
+    
+    if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Пользователи не найдены</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = users.map(user => {
+        const roleBadge = user.role === 'super_admin' 
+            ? '<span class="badge bg-danger">Супер-админ</span>' 
+            : '<span class="badge bg-primary">Админ</span>';
+        
+        // Статус: учитываем is_active
+        let statusBadge = '';
+        if (!user.is_active) {
+            statusBadge = '<span class="badge bg-secondary">Неактивен</span>';
+        } else if (!user.is_approved) {
+            statusBadge = '<span class="badge bg-warning text-dark">Ожидает</span>';
+        } else {
+            statusBadge = '<span class="badge bg-success">Активен</span>';
+        }
+        
+        const photoHtml = user.photo_url 
+            ? `<img src="${user.photo_url}" alt="${user.username}" class="user-avatar-small">`
+            : `<div class="user-avatar-placeholder">${getInitials(user.username, user.email)}</div>`;
+        
+        const isCurrentUser = user.id === currentUserId;
+        const isSuperAdmin = user.role === 'super_admin';
+        const disableActions = isSuperAdmin && isCurrentUser;
+        
+        // Блокируем действия для неактивных пользователей
+        const isInactive = !user.is_active;
+        
+        const actions = `
+            <button onclick="openRoleModal(${user.id})" 
+                    class="btn btn-sm btn-outline-primary" 
+                    title="Изменить права"
+                    ${disableActions || isInactive ? 'disabled' : ''}>
+                <i class="bi bi-pencil"></i>
+            </button>
+            <button onclick="openPasswordModal(${user.id}, '${user.username}')" 
+                    class="btn btn-sm btn-outline-warning" 
+                    title="Сбросить пароль"
+                    ${disableActions || isInactive ? 'disabled' : ''}>
+                <i class="bi bi-key"></i>
+            </button>
+            <button onclick="deleteUser(${user.id}, '${user.username}')" 
+                    class="btn btn-sm btn-outline-danger"
+                    title="Удалить пользователя"
+                    ${disableActions || isInactive ? 'disabled' : ''}>
+                <i class="bi bi-trash"></i>
+            </button>
+        `;
+        
+        // Добавляем класс для визуального выделения неактивных
+        const rowClass = isInactive ? 'table-secondary text-muted' : '';
+        
+        return `
+            <tr class="${rowClass}">
+                <td class="user-photo-cell">${photoHtml}</td>
+                <td><strong>${user.username}</strong></td>
+                <td>${user.email}</td>
+                <td>${roleBadge}</td>
+                <td>${statusBadge}</td>
+                <td><small>${new Date(user.created_at).toLocaleDateString('ru-RU')}</small></td>
+                <td class="action-buttons">${actions}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function openRoleModal(userId) {
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) return;
+    
+    document.getElementById('modalUserId').value = user.id;
+    document.getElementById('modalRole').value = user.role;
+    document.getElementById('modalApproved').checked = user.is_approved;
+    
+    roleModal.show();
+}
+
+function openPasswordModal(userId, username) {
+    document.getElementById('resetUserId').value = userId;
+    document.getElementById('newPassword').value = '';
+    document.getElementById('generatedPassword').classList.add('d-none');
+    document.getElementById('passwordRequirements').classList.add('d-none');
+    document.querySelector('#passwordModal .modal-title').innerHTML = '<i class="bi bi-key me-1"></i>Сброс пароля: ' + username;
+    
+    ['reqLength', 'reqUpper', 'reqLower', 'reqDigit'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.className = 'text-danger';
+            el.innerHTML = '<i class="bi bi-x-circle me-1"></i>' + el.textContent.substring(2);
+        }
+    });
+    
+    document.getElementById('confirmResetBtn').disabled = true;
+    
+    passwordModal.show();
+}
+
+document.getElementById('newPassword').addEventListener('input', (e) => {
+    const password = e.target.value;
+    const requirementsDiv = document.getElementById('passwordRequirements');
+    
+    if (password) {
+        requirementsDiv.classList.remove('d-none');
+        const isValid = validatePassword(password);
+        document.getElementById('confirmResetBtn').disabled = !isValid;
+    } else {
+        requirementsDiv.classList.add('d-none');
+        document.getElementById('confirmResetBtn').disabled = true;
+    }
+});
+
+document.getElementById('generatePasswordBtn').addEventListener('click', () => {
+    const newPassword = generatePassword();
+    document.getElementById('newPassword').value = newPassword;
+    document.getElementById('passwordCode').textContent = newPassword;
+    document.getElementById('generatedPassword').classList.remove('d-none');
+    
+    ['reqLength', 'reqUpper', 'reqLower', 'reqDigit'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.className = 'text-success';
+            el.innerHTML = '<i class="bi bi-check-circle me-1"></i>' + el.textContent.substring(2);
+        }
+    });
+    document.getElementById('confirmResetBtn').disabled = false;
+});
+
+document.getElementById('confirmResetBtn').addEventListener('click', async () => {
+    const userId = document.getElementById('resetUserId').value;
+    let newPassword = document.getElementById('newPassword').value;
+    const token = getAuthToken();
+    
+    if (!newPassword) {
+        newPassword = generatePassword();
+        document.getElementById('passwordCode').textContent = newPassword;
+        document.getElementById('generatedPassword').classList.remove('d-none');
+        alert('<i class="bi bi-lock"></i> Сгенерирован пароль:\n\n' + newPassword + '\n\nНажмите "Сбросить пароль" ещё раз, чтобы применить');
+        return;
+    }
+    
+    if (!validatePassword(newPassword)) {
+        alert('<i class="bi bi-x-circle"></i> Пароль не соответствует требованиям безопасности!\n\nПроверьте индикаторы выше.');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ new_password: newPassword })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: 'Ошибка сервера' }));
+            throw new Error(err.detail || `HTTP ${response.status}`);
+        }
+        
+        passwordModal.hide();
+        alert('<i class="bi bi-check-circle"></i> Пароль успешно сброшен!\n\nНовый пароль: ' + newPassword + '\n\nПередайте его сотруднику!');
+        loadUsers();
+        
+    } catch (err) {
+        alert('<i class="bi bi-x-circle"></i> ' + err.message);
+    }
+});
+
+document.getElementById('saveRoleBtn').addEventListener('click', async () => {
+    const userId = document.getElementById('modalUserId').value;
+    const token = getAuthToken();
+    
+    const data = {
+        role: document.getElementById('modalRole').value,
+        is_approved: document.getElementById('modalApproved').checked
+    };
+    
+    try {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: 'Ошибка сервера' }));
+            throw new Error(err.detail || `HTTP ${response.status}`);
+        }
+        
+        roleModal.hide();
+        loadUsers();
+        alert('Права доступа обновлены');
+        
+    } catch (err) {
+        alert('Ошибка: ' + err.message);
+    }
+});
+
+async function deleteUser(userId, username) {
+    if (!confirm(`Вы действительно хотите БЕЗВОЗВРАТНО удалить пользователя "${username}"?\n\nВсе созданные им записи останутся, но потеряют связь с автором.`)) {
+        return;
+    }
+    
+    const token = getAuthToken();
+    
+    try {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.status === 204) {
+            alert('Пользователь удалён');
+            loadUsers();
+        } else {
+            const err = await response.json().catch(() => ({ detail: 'Ошибка сервера' }));
+            throw new Error(err.detail || `HTTP ${response.status}`);
+        }
+    } catch (err) {
+        alert('Ошибка: ' + err.message);
+    }
+}
+
+function applyFilters() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const role = document.getElementById('roleFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    
+    let filtered = allUsers.filter(user => {
+        // 🔹 По умолчанию скрываем неактивных, если не выбран фильтр "Неактивные"
+        if (status !== 'inactive' && !user.is_active) {
+            return false;
+        }
+        
+        const matchSearch = !search || 
+            user.username.toLowerCase().includes(search) || 
+            user.email.toLowerCase().includes(search) ||
+            user.role.toLowerCase().includes(search);
+        
+        const matchRole = !role || user.role === role;
+        
+        let matchStatus = true;
+        if (status === 'approved') matchStatus = user.is_approved && user.is_active;
+        else if (status === 'pending') matchStatus = !user.is_approved && user.is_active;
+        else if (status === 'inactive') matchStatus = !user.is_active;
+        
+        return matchSearch && matchRole && matchStatus;
+    });
+    
+    renderUsersTable(filtered);
+}
+
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('roleFilter').addEventListener('change', applyFilters);
+document.getElementById('statusFilter').addEventListener('change', applyFilters);
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('roleFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    applyFilters();
+});
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
+document.addEventListener('DOMContentLoaded', loadUsers);
+</script>
+{% endblock %}

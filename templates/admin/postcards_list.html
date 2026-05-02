@@ -1,0 +1,125 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Управление шаблонами открыток{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center">
+    <h2>Управление шаблонами открыток</h2>
+    <a href="/admin/postcards/new" class="btn btn-primary">➕ Добавить шаблон</a>
+</div>
+
+<div class="search-bar">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию...">
+        </div>
+        <div class="col-md-6 text-end">
+            <span class="badge-count">Найдено: <span id="countBadge">0</span></span>
+        </div>
+    </div>
+</div>
+
+<div class="admin-table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th class="col-image">Изображение</th>
+                <th class="col-actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody id="postcardsTable">
+            <tr><td colspan="3" class="empty-table-message">Загрузка...</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let allPostcards = [];
+
+async function loadPostcards() {
+    const tbody = document.getElementById('postcardsTable');
+    const countBadge = document.getElementById('countBadge');
+    
+    try {
+        const data = await apiRequest('/api/postcards/?limit=100');
+        allPostcards = data;
+        renderPostcardsTable(data);
+        countBadge.textContent = data.length;
+        
+    } catch (err) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3" class="error-table-message">
+                    <p>Ошибка загрузки: ${err.message}</p>
+                    <button onclick="loadPostcards()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
+    }
+}
+
+function renderPostcardsTable(items) {
+    const tbody = document.getElementById('postcardsTable');
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-table-message">Нет записей</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = items.map(item => {
+        const shortDesc = (item.description || '').substring(0, 40);
+        const descSuffix = item.description?.length > 40 ? '...' : '';
+        
+        return `
+            <tr>
+                <td>
+                    <strong>${item.title}</strong>
+                    <span class="table-description">${shortDesc}${descSuffix}</span>
+                </td>
+                <td>
+                    ${item.image_url 
+                        ? `<img src="${item.image_url}" alt="" class="table-thumbnail">`
+                        : '<span class="table-no-image">—</span>'}
+                </td>
+                <td class="action-buttons">
+                    <a href="/admin/postcards/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deletePostcard(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (!query) {
+        renderPostcardsTable(allPostcards);
+        document.getElementById('countBadge').textContent = allPostcards.length;
+        return;
+    }
+    
+    const filtered = allPostcards.filter(item => 
+        item.title?.toLowerCase().includes(query) || 
+        item.description?.toLowerCase().includes(query)
+    );
+    
+    renderPostcardsTable(filtered);
+    document.getElementById('countBadge').textContent = filtered.length;
+});
+
+async function deletePostcard(id) {
+    if (!confirm('Удалить этот шаблон?')) return;
+    
+    try {
+        await apiRequest(`/api/postcards/${id}`, { method: 'DELETE' });
+        loadPostcards();
+    } catch (err) {
+        alert('Ошибка удаления: ' + err.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadPostcards);
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Сувенирные магазины Ачинска{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Сувенирные магазины Ачинска</h1>
+    <p class="text-muted">Где купить памятные подарки от местных мастеров</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название магазина...">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Тип магазина</label>
+                <select id="categoryFilter" class="form-select form-select-sm">
+                    <option value="">Любой тип</option>
+                    <option value="Сувенирная лавка">Сувенирная лавка</option>
+                    <option value="Мастерская">Мастерская</option>
+                    <option value="Галерея">Галерея</option>
+                    <option value="Торговый центр">Торговый центр</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3 d-flex align-items-end">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label small text-muted d-block mb-2">Сортировка</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="name">По названию</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="category">По типу</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="souvenirsList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка магазинов...</p>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4">
+    <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
+        Показать еще
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+const limit = 6;
+let currentSort = 'name';
+
+async function loadSouvenirs(append = false) {
+    const listEl = document.getElementById('souvenirsList');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (!append) {
+        listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+    }
+    
+    try {
+        const search = document.getElementById('searchInput').value;
+        const category = document.getElementById('categoryFilter').value;
+        
+        let url = `/api/souvenirs/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
+        
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+        url += `&sort=${currentSort}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!append) listEl.innerHTML = '';
+        
+        if (data.length === 0 && currentPage === 1) {
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Магазины не найдены</p></div>';
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        if (data.length === 0) {
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        data.forEach(item => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+
+            col.innerHTML = `
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
+                    ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    
+                    <!-- Тип магазина в правом верхнем углу -->
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold text-primary">${item.category || 'Магазин'}</small>
+                    </div>
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">${item.name}</h5>
+                        ${item.address ? `<p class="card-text small text-muted">${item.address}</p>` : ''}
+                        ${item.working_hours ? `<p class="card-text small">Режим работы: ${item.working_hours}</p>` : ''}
+                        ${item.phone ? `<p class="card-text small">Телефон: ${item.phone}</p>` : ''}
+                        <p class="card-text small">${item.description?.substring(0, 80) || ''}${item.description?.length > 80 ? '...' : ''}</p>
+                        ${item.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
+                    </div>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/souvenirs/${item.id}" class="btn btn-outline-primary w-100">Подробнее</a>
+                    </div>
+                </div>
+            `;
+            listEl.appendChild(col);
+        });
+        
+        if (data.length === limit) {
+            loadMoreBtn.classList.remove('d-none');
+        } else {
+            loadMoreBtn.classList.add('d-none');
+        }
+        
+    } catch (err) {
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadSouvenirs()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
+    }
+}
+
+// Обработчики фильтров
+document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadSouvenirs(); });
+document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadSouvenirs(); });
+
+// Сброс
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = '';
+    currentSort = 'name';
+    currentPage = 1;
+    
+    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-sort="name"]').classList.add('active');
+    
+    loadSouvenirs();
+});
+
+// Подгрузка
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    currentPage++;
+    loadSouvenirs(true);
+});
+
+// Старт
+document.addEventListener('DOMContentLoaded', () => loadSouvenirs());
+</script>
+
+<style>
+.hover-shadow { transition: box-shadow 0.3s ease; }
+.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
+</style>
+{% endblock %}

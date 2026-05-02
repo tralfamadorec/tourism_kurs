@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Справочник безопасности | Ачинск{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Справочник безопасности</h1>
+    <p class="text-muted">Экстренные службы и медицинские учреждения Ачинска</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название организации или адрес...">
+            </div>
+            
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Категория</label>
+                <select id="categoryFilter" class="form-select form-select-sm">
+                    <option value="">Все службы</option>
+                    <option value="Полиция">Полиция</option>
+                    <option value="МЧС">МЧС</option>
+                    <option value="Скорая помощь">Скорая помощь</option>
+                    <option value="Медицина">Больницы</option>
+                    <option value="Аптека">Аптеки</option>
+                    <option value="Другое">Другое</option>
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="safetyList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка справочника...</p>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4">
+    <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
+        Показать еще
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+const limit = 12;
+
+async function loadSafetyObjects(append = false) {
+    const listEl = document.getElementById('safetyList');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (!append) {
+        listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+    }
+    
+    try {
+        const search = document.getElementById('searchInput').value;
+        const category = document.getElementById('categoryFilter').value;
+        
+        let url = `/api/safety/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
+        
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!append) listEl.innerHTML = '';
+        
+        if (data.length === 0 && currentPage === 1) {
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Записи не найдены</p></div>';
+            if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        if (data.length === 0) {
+            if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        data.forEach(item => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+
+            col.innerHTML = `
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
+                    ${item.photo_url 
+                        ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` 
+                        : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold text-primary">${item.category || 'Служба'}</small>
+                    </div>
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">${item.name}</h5>
+                        ${item.address ? `<p class="card-text small text-muted">${item.address}</p>` : ''}
+                        ${item.phone ? `<p class="card-text small">Телефон: ${item.phone}</p>` : ''}
+                    </div>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/safety/${item.id}" class="btn btn-outline-primary w-100">Подробнее</a>
+                    </div>
+                </div>
+            `;
+            listEl.appendChild(col);
+        });
+        
+        if (loadMoreBtn) {
+            if (data.length === limit) {
+                loadMoreBtn.classList.remove('d-none');
+            } else {
+                loadMoreBtn.classList.add('d-none');
+            }
+        }
+        
+    } catch (err) {
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadSafetyObjects()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
+    }
+}
+
+document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadSafetyObjects(); });
+document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadSafetyObjects(); });
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = '';
+    currentPage = 1;
+    loadSafetyObjects();
+});
+
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    currentPage++;
+    loadSafetyObjects(true);
+});
+
+document.addEventListener('DOMContentLoaded', () => loadSafetyObjects());
+</script>
+
+<style>
+.hover-shadow { transition: box-shadow 0.3s ease; }
+.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
+</style>
+{% endblock %}

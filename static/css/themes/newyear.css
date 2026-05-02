@@ -1,0 +1,79 @@
+[data-theme="newyear"] {
+    --gradient-header: linear-gradient(135deg, rgb(230, 49, 49), rgb(59, 222, 42));
+    --gradient-primary: linear-gradient(135deg, rgb(230, 49, 49), rgb(59, 222, 42));
+    --gradient-btn-hover: linear-gradient(135deg, rgb(230, 49, 49), rgb(59, 222, 42));
+    --gradient-card-top: linear-gradient(135deg, rgb(230, 49, 49), rgb(59, 222, 42));
+    
+    --color-primary: #c41e3a;
+    --color-primary-hover: #a01830;
+    --color-accent: #ffd700;
+    --color-accent-hover: #ffed4e;
+    --color-success: #2e7d32;
+
+    --hero-overlay-color-1: rgba(230, 49, 49, 0.4);
+    --hero-overlay-color-2: rgba(59, 222, 42, 0.4);
+    --hero-blur: 2px; 
+}
+
+[data-theme="newyear"] .object-card-badge,
+[data-theme="newyear"] .event-card-date-badge,
+[data-theme="newyear"] .food-card-rating-badge,
+[data-theme="newyear"] .inclusive-card-type-badge {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+    color: #0a192f !important;
+    border: 1px solid #b8860b !important;
+}
+
+[data-theme="newyear"] .btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+
+[data-theme="newyear"] .btn-primary:hover {
+    background: var(--gradient-btn-hover);
+    border-color: var(--color-accent-hover);
+}
+
+[data-theme="newyear"] .card:hover,
+[data-theme="newyear"] .object-card:hover {
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 4px 14px rgba(255, 215, 0, 0.25);
+}
+
+[data-theme="newyear"] .celebration-toggle {
+    border-color: var(--color-accent);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="newyear"] .celebration-toggle:hover {
+    border-color: var(--color-accent-hover);
+    background: #fff;
+}
+
+[data-theme="newyear"] .celebration-toggle i {
+    color: var(--color-primary);
+}
+
+[data-theme="newyear"] .celebration-toggle:hover i {
+    color: var(--color-primary-hover);
+}
+
+body.bvi-active .snowflakes-box,
+body.bvi-active .snowball-box {
+    display: none !important;
+}
+
+body.bvi-active .celebration-toggle {
+    display: none !important;
+}
+
+.snowflakes-box {
+    pointer-events: none;
+    z-index: 9998 !important;
+}
+
+.snowball-box {
+    pointer-events: none;
+    z-index: 9999 !important;
+}

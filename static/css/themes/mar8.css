@@ -1,0 +1,83 @@
+[data-theme="mar8"] {
+    --gradient-header: linear-gradient(225deg, rgb(215, 77, 132) 29%, rgb(81, 207, 81));
+    --gradient-primary: linear-gradient(225deg, rgb(215, 77, 132) 29%, rgb(81, 207, 81));
+    --gradient-btn-hover: linear-gradient(225deg, rgb(215, 77, 132) 29%, rgb(81, 207, 81));
+    --gradient-card-top: linear-gradient(225deg, rgb(215, 77, 132) 29%, rgb(81, 207, 81));
+    
+    --color-primary: #e91e63;
+    --color-primary-hover: #c2185b;
+    --color-accent: #ffd1dc;
+    --color-accent-hover: #ffe4ec;
+    --color-success: #4caf50;
+
+    --hero-overlay-color-1: rgba(215, 77, 132, 0.4);
+    --hero-overlay-color-2: rgba(81, 207, 81, 0.4);
+    --hero-blur: 2px; 
+}
+
+[data-theme="mar8"] .object-card-badge,
+[data-theme="mar8"] .event-card-date-badge,
+[data-theme="mar8"] .food-card-rating-badge,
+[data-theme="mar8"] .inclusive-card-type-badge {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%) !important;
+    color: #fff !important;
+    border: 1px solid #e91e63 !important;
+}
+
+[data-theme="mar8"] .btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+[data-theme="mar8"] .btn-primary:hover {
+    background: var(--gradient-btn-hover);
+    border-color: var(--color-accent-hover);
+}
+
+[data-theme="mar8"] .card:hover,
+[data-theme="mar8"] .object-card:hover {
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 4px 14px rgba(233, 30, 99, 0.2);
+}
+
+[data-theme="mar8"] .celebration-toggle {
+    border-color: var(--color-accent);
+    background: rgba(255, 255, 255, 0.95);
+}
+[data-theme="mar8"] .celebration-toggle:hover {
+    border-color: var(--color-accent-hover);
+    background: #fff;
+}
+[data-theme="mar8"] .celebration-toggle i {
+    color: var(--color-primary);
+}
+[data-theme="mar8"] .celebration-toggle:hover i {
+    color: var(--color-primary-hover);
+}
+
+.mar8-tulip {
+    position: fixed;
+    top: -40px;
+    font-size: 24px;
+    pointer-events: none;
+    z-index: 9990;
+    opacity: 0.9;
+    animation: tulipFall linear forwards;
+    user-select: none;
+}
+
+@keyframes tulipFall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(120vh) rotate(20deg);
+        opacity: 0;
+    }
+}
+
+body.bvi-active .mar8-tulip,
+body.bvi-active .celebration-toggle {
+    display: none !important;
+}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Инклюзивный туризм | Ачинск{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Инклюзивный туризм в Ачинске</h1>
+    <p class="text-muted">Объекты, доступные для маломобильных групп населения</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <label class="form-label small text-muted">Тип объекта</label>
+        <select id="typeFilter" class="form-select form-select-sm" onchange="filterObjects()">
+            <option value="all">Все типы</option>
+            <option value="attraction">Достопримечательности</option>
+            <option value="accommodation">Гостиницы</option>
+            <option value="food">Питание</option>
+            <option value="event">События</option>
+            <option value="route">Маршруты</option>
+            <option value="souvenir">Сувениры</option>
+        </select>
+    </div>
+</div>
+
+<div id="inclusiveList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка доступных объектов...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allAccessibleObjects = [];
+
+async function loadAccessibleObjects() {
+    const endpoints = [
+        { type: 'attraction', url: '/api/attractions/?limit=100' },
+        { type: 'accommodation', url: '/api/accommodations/?limit=100' },
+        { type: 'food', url: '/api/foods/?limit=100' },
+        { type: 'event', url: '/api/events/?limit=100' },
+        { type: 'route', url: '/api/routes/?limit=100' },
+        { type: 'souvenir', url: '/api/souvenirs/?limit=100' }
+    ];
+
+    const results = [];
+    
+    for (const api of endpoints) {
+        try {
+            const response = await fetch(api.url);
+            const data = await response.json();
+            // Фильтруем на клиенте
+            const accessible = data.filter(obj => obj.is_accessible === true);
+            results.push(...accessible.map(obj => ({...obj, objType: api.type})));
+        } catch (e) {
+            console.warn(`Ошибка загрузки ${api.type}:`, e);
+        }
+    }
+    
+    allAccessibleObjects = results;
+    renderObjects(allAccessibleObjects);
+}
+
+function renderObjects(objects) {
+    const container = document.getElementById('inclusiveList');
+    container.innerHTML = '';
+    
+    if (objects.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Доступных объектов пока нет</p></div>';
+        return;
+    }
+    
+    const typeLabels = {
+        attraction: 'Культурный объект',
+        accommodation: 'Размещение',
+        food: 'Питание',
+        event: 'Событие',
+        route: 'Маршрут',
+        souvenir: 'Сувениры'
+    };
+    
+    objects.forEach(obj => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4';
+        
+        const typeLabel = typeLabels[obj.objType] || 'Объект';
+        
+        let link = `/${obj.objType === 'accommodation' ? 'hotels' : obj.objType === 'food' ? 'food' : obj.objType === 'souvenir' ? 'souvenirs' : obj.objType + 's'}/${obj.id}`;
+        
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm hover-shadow position-relative">
+                ${obj.photo_url ? `<img src="${obj.photo_url}" class="card-img-top" alt="${obj.name || obj.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                
+                <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                    <small class="fw-bold text-primary">${typeLabel}</small>
+                </div>
+                
+                <div class="card-body">
+                    <h5 class="card-title">${obj.name || obj.title}</h5>
+                    <p class="card-text small text-muted">${obj.address || obj.location || 'Адрес не указан'}</p>
+                    <p class="card-text small">${(obj.description || '').substring(0, 80)}${obj.description?.length > 80 ? '...' : ''}</p>
+                </div>
+                <div class="card-body pt-0 mt-3">
+                    <a href="${link}" class="btn btn-outline-primary w-100">Подробнее</a>
+                </div>
+            </div>
+        `;
+        container.appendChild(col);
+    });
+}
+
+function filterObjects() {
+    const type = document.getElementById('typeFilter').value;
+    if (type === 'all') {
+        renderObjects(allAccessibleObjects);
+    } else {
+        const filtered = allAccessibleObjects.filter(obj => obj.objType === type);
+        renderObjects(filtered);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadAccessibleObjects);
+</script>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}

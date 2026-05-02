@@ -1,0 +1,215 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ 'Редактировать' if is_edit else 'Добавить' }} достопримечательность{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center">
+    <h2>{{ title }}</h2>
+    <a href="/admin/attractions" class="btn btn-outline-secondary">← Назад к списку</a>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-body">
+        <form id="attractionForm">
+            <div class="form-group">
+                <label for="name">Название *</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Описание</label>
+                <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Адрес</label>
+                <input type="text" class="form-control" id="address" name="address">
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="latitude">Широта</label>
+                        <input type="number" step="any" class="form-control" id="latitude" name="latitude">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="longitude">Долгота</label>
+                        <input type="number" step="any" class="form-control" id="longitude" name="longitude">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="rating">Рейтинг (0.0 - 5.0)</label>
+                        <input type="number" step="0.1" min="0" max="5" class="form-control" id="rating" name="rating" value="0.0">
+                    </div>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="is_accessible" name="is_accessible">
+                        <label class="form-check-label" for="is_accessible">Доступно для МГН</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="photo-upload-block">
+                <h4>Изображение</h4>
+                
+                <div id="currentPhotoContainer" class="current-photo-preview d-none">
+                    <p class="small text-muted mb-3">Текущее изображение:</p>
+                    <img id="currentImage" src="" alt="Текущее фото"><br>
+                    <button type="button" id="deletePhotoBtn" class="btn btn-sm btn-outline-danger mt-3">Удалить фото</button>
+                </div>
+
+                <div class="photo-upload-section">
+                    <label>Загрузить с компьютера:</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="photoFile" accept="image/*">
+                        <button type="button" id="uploadPhotoBtn" class="btn btn-outline-primary">Загрузить</button>
+                    </div>
+                </div>
+                
+                <div class="photo-upload-section">
+                    <label>Или вставьте ссылку:</label>
+                    <input type="url" class="form-control" id="photoLink" placeholder="https://...">
+                </div>
+                
+                <input type="hidden" id="photo_url" name="photo_url">
+            </div>
+
+            <div id="formError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="/admin/attractions" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('attractionForm');
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const itemId = {{ item_id if is_edit else 'null' }};
+
+const photoFileInput = document.getElementById('photoFile');
+const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+const photoLinkInput = document.getElementById('photoLink');
+const photoUrlInput = document.getElementById('photo_url');
+const currentPhotoContainer = document.getElementById('currentPhotoContainer');
+const currentImage = document.getElementById('currentImage');
+const deletePhotoBtn = document.getElementById('deletePhotoBtn');
+
+if (isEdit && itemId) loadAttractionData(itemId);
+
+async function loadAttractionData(id) {
+    try {
+        const data = await apiRequest(`/api/attractions/${id}`);
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('description').value = data.description || '';
+        document.getElementById('address').value = data.address || '';
+        document.getElementById('latitude').value = data.latitude || '';
+        document.getElementById('longitude').value = data.longitude || '';
+        document.getElementById('rating').value = data.rating ?? 0.0;
+        document.getElementById('is_accessible').checked = !!data.is_accessible;
+        
+        if (data.photo_url) {
+            photoUrlInput.value = data.photo_url;
+            currentImage.src = data.photo_url;
+            currentPhotoContainer.classList.remove('d-none');
+            deletePhotoBtn.classList.remove('d-none');
+            if (data.photo_url.startsWith('http')) photoLinkInput.value = data.photo_url;
+        }
+    } catch (err) {
+        document.getElementById('formError').textContent = 'Ошибка загрузки: ' + err.message;
+        document.getElementById('formError').classList.remove('d-none');
+    }
+}
+
+deletePhotoBtn.addEventListener('click', () => {
+    photoUrlInput.value = '';
+    photoLinkInput.value = '';
+    photoFileInput.value = '';
+    currentImage.src = '';
+    currentPhotoContainer.classList.add('d-none');
+    deletePhotoBtn.classList.add('d-none');
+});
+
+uploadPhotoBtn.addEventListener('click', async () => {
+    const file = photoFileInput.files[0];
+    if (!file) return alert('Выберите файл');
+    uploadPhotoBtn.disabled = true;
+    uploadPhotoBtn.textContent = 'Загрузка...';
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const res = await fetch('/api/upload/', { method: 'POST', headers: { 'Authorization': `Bearer ${getCookie('access_token')}` }, body: formData });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Ошибка');
+        const data = await res.json();
+        photoUrlInput.value = data.file_url;
+        currentImage.src = data.file_url;
+        currentPhotoContainer.classList.remove('d-none');
+        deletePhotoBtn.classList.remove('d-none');
+        photoLinkInput.value = '';
+        alert('Фото загружено');
+    } catch (e) { alert('❌ ' + e.message); }
+    finally { uploadPhotoBtn.disabled = false; uploadPhotoBtn.textContent = '📤 Загрузить'; }
+});
+
+photoLinkInput.addEventListener('input', (e) => {
+    photoUrlInput.value = e.target.value;
+    if (e.target.value && e.target.value.startsWith('http')) {
+        currentImage.src = e.target.value;
+        currentPhotoContainer.classList.remove('d-none');
+        deletePhotoBtn.classList.remove('d-none');
+        photoFileInput.value = '';
+    }
+});
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+
+    const data = { is_accessible: document.getElementById('is_accessible').checked };
+    
+    new FormData(form).forEach((val, key) => {
+        if (key !== 'is_accessible' && key !== 'photo_url' && val !== '') data[key] = val;
+    });
+
+    data.photo_url = photoUrlInput.value.trim() === '' ? null : photoUrlInput.value;
+
+    data.rating = document.getElementById('rating').value ? parseFloat(document.getElementById('rating').value) : null;
+    data.latitude = document.getElementById('latitude').value ? parseFloat(document.getElementById('latitude').value) : null;
+    data.longitude = document.getElementById('longitude').value ? parseFloat(document.getElementById('longitude').value) : null;
+
+    try {
+        const url = isEdit ? `/api/attractions/${itemId}` : '/api/attractions/';
+        const res = await fetch(url, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Ошибка');
+        
+        successDiv.classList.remove('d-none');
+        setTimeout(() => window.location.href = '/admin/attractions', 1500);
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}

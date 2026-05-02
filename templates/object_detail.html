@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Ачинск туристический{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm hover-shadow mb-4">
+            {% if photo %}
+            <img src="{{ photo }}" class="card-img-top" alt="{{ title }}" style="height: 300px; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.querySelector('.no-photo').style.display='flex';">
+            <div class="no-photo bg-secondary text-white d-none align-items-center justify-content-center" style="height: 300px;">
+                <span>Фото недоступно</span>
+            </div>
+            {% endif %}
+            
+            <div class="card-body">
+                <h1 class="h3 mb-3">{{ title }}</h1>
+                
+                <table class="table table-bordered mb-4">
+                    <tbody>
+                        {% for label, value in details %}
+                        {% if value %}
+                        <tr>
+                            <th style="width: 35%;" class="text-muted bg-light">{{ label }}</th>
+                            <td>
+                                {% if label == "Телефон" and value %}
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="fw-bold">{{ value }}</span>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary copy-phone mt-2 mt-sm-0" 
+                                            data-phone="{{ value }}"
+                                            title="Скопировать номер"
+                                            style="padding: 2px 8px; line-height: 1;">
+                                        Копировать
+                                    </button>
+                                </div>
+                                {% else %}
+                                {{ value }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if description %}
+                <div class="mb-4">
+                    <h5 class="h5 mb-2">Описание</h5>
+                    <p class="text-secondary">{{ description|replace('\n', '<br>')|safe }}</p>
+                </div>
+                {% endif %}
+
+                <div class="d-flex gap-2 mt-3">
+                    <a href="{{ back_url }}" class="btn btn-outline-secondary">Назад</a>
+                    {% if item.latitude and item.longitude %}
+                    <a href="/map?focus={{ objType }}-{{ item.id }}" class="btn btn-outline-primary">На карте</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.copy-phone').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const phone = this.dataset.phone;
+            try {
+                await navigator.clipboard.writeText(phone);
+                const originalText = this.textContent;
+                this.textContent = 'Скопировано';
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-success');
+                setTimeout(() => {
+                    this.textContent = originalText;
+                    this.classList.add('btn-outline-secondary');
+                    this.classList.remove('btn-success');
+                }, 1500);
+            } catch (err) {
+                const textarea = document.createElement('textarea');
+                textarea.value = phone;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Номер скопирован: ' + phone);
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}

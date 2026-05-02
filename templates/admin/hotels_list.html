@@ -1,0 +1,122 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Управление средствами размещения{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center">
+    <h2>Управление средствами размещения</h2>
+    <a href="/admin/hotels/new" class="btn btn-primary">➕ Добавить гостиницу</a>
+</div>
+
+<div class="search-bar">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию или адресу...">
+        </div>
+        <div class="col-md-6 text-end">
+            <span class="badge-count">Найдено: <span id="countBadge">0</span></span>
+        </div>
+    </div>
+</div>
+
+<div class="admin-table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Адрес</th>
+                <th class="col-rating">Рейтинг</th>
+                <th class="col-price">Цена/сутки</th>
+                <th class="col-actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody id="hotelsTable">
+            <tr><td colspan="5" class="empty-table-message">Загрузка данных...</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let allHotels = [];
+
+async function loadHotels() {
+    const tbody = document.getElementById('hotelsTable');
+    const countBadge = document.getElementById('countBadge');
+    
+    try {
+        const data = await apiRequest('/api/accommodations/?limit=100');
+        allHotels = data;
+        renderHotelsTable(data);
+        countBadge.textContent = data.length;
+        
+    } catch (err) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="error-table-message">
+                    <p>Ошибка загрузки: ${err.message}</p>
+                    <button onclick="loadHotels()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
+    }
+}
+
+function renderHotelsTable(items) {
+    const tbody = document.getElementById('hotelsTable');
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-table-message">Нет записей</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = items.map(item => {
+        const ratingText = item.rating ? item.rating.toFixed(1) : '—';
+        
+        return `
+            <tr>
+                <td><strong>${item.name}</strong></td>
+                <td>${item.address || '—'}</td>
+                <td><span class="rating-value">${ratingText}</span></td>
+                <td><span class="price-value">${item.price_per_night ? item.price_per_night + ' ₽' : '—'}</span></td>
+                <td class="action-buttons">
+                    <a href="/admin/hotels/${item.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deleteHotel(${item.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (!query) {
+        renderHotelsTable(allHotels);
+        document.getElementById('countBadge').textContent = allHotels.length;
+        return;
+    }
+    
+    const filtered = allHotels.filter(item => 
+        item.name?.toLowerCase().includes(query) || 
+        item.address?.toLowerCase().includes(query)
+    );
+    
+    renderHotelsTable(filtered);
+    document.getElementById('countBadge').textContent = filtered.length;
+});
+
+async function deleteHotel(id) {
+    if (!confirm('Удалить эту запись о гостинице?')) return;
+    
+    try {
+        await apiRequest(`/api/accommodations/${id}`, { method: 'DELETE' });
+        loadHotels();
+    } catch (err) {
+        alert('Ошибка удаления: ' + err.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadHotels);
+</script>
+{% endblock %}

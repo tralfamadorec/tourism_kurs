@@ -13,19 +13,28 @@ router = APIRouter(prefix="/api/souvenirs", tags=["Сувениры"])
 
 @router.get("/", response_model=List[SouvenirResponse])
 async def get_souvenirs(
-    search: Optional[str] = Query(None, description="Нечеткий поиск по названию"),
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Вернуть не более N записей"),
+    limit: int = Query(50, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    search: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),  # Тип магазина
+    sort: str = Query("name", description="name, category"),
     db: AsyncSession = Depends(get_db)
 ):
     query = select(Souvenir).where(Souvenir.is_active == True)
     
     if search:
         query = query.where(Souvenir.name.ilike(f"%{search}%"))
+    if category:
+        query = query.where(Souvenir.category.ilike(f"%{category}%"))
         
-    result = await db.execute(query.order_by(Souvenir.name).offset(skip).limit(limit))
+    if sort == "category":
+        query = query.order_by(Souvenir.category.asc(), Souvenir.name.asc())
+    else:
+        query = query.order_by(Souvenir.name.asc())
+        
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
-
 @router.get("/{souvenir_id}", response_model=SouvenirResponse)
 async def get_souvenir_by_id(souvenir_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(

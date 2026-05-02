@@ -1,0 +1,145 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Управление событиями{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center">
+    <h2>Управление событиями</h2>
+    <a href="/admin/events/new" class="btn btn-primary">➕ Добавить событие</a>
+</div>
+
+<div class="search-bar">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск по названию или месту...">
+        </div>
+        <div class="col-md-6 text-end">
+            <span class="badge-count">Найдено: <span id="countBadge">0</span></span>
+        </div>
+    </div>
+</div>
+
+<div class="admin-table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th class="col-photo">Фото</th>
+                <th>Название</th>
+                <th class="col-date">Дата и время</th>
+                <th class="col-location">Место</th>
+                <th class="col-category">Категория</th>
+                <th class="col-accessibility">Доступность</th>
+                <th class="col-actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody id="eventsTable">
+            <tr><td colspan="7" class="empty-table-message">Загрузка данных...</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let allEvents = [];
+
+async function loadEvents() {
+    const tbody = document.getElementById('eventsTable');
+    const countBadge = document.getElementById('countBadge');
+    
+    try {
+        const data = await apiRequest('/api/events/?limit=100');
+        allEvents = data;
+        renderEventsTable(data);
+        countBadge.textContent = data.length;
+        
+    } catch (err) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="error-table-message">
+                    <p>Ошибка загрузки: ${err.message}</p>
+                    <button onclick="loadEvents()" class="btn btn-sm btn-outline-danger">Повторить</button>
+                </td>
+            </tr>`;
+    }
+}
+
+function renderEventsTable(items) {
+    const tbody = document.getElementById('eventsTable');
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-table-message">Нет записей</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = items.map(event => {
+        const dateStr = event.event_date 
+            ? new Date(event.event_date).toLocaleString('ru-RU', { 
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit' 
+            })
+            : '—';
+        
+        const shortDesc = (event.description || '').substring(0, 40);
+        const descSuffix = event.description?.length > 40 ? '...' : '';
+        
+        return `
+            <tr>
+                <td>
+                    ${event.photo_url 
+                        ? `<img src="${event.photo_url}" alt="" class="table-thumbnail">`
+                        : '<span class="table-no-image">—</span>'}
+                </td>
+                <td>
+                    <strong>${event.title}</strong>
+                    <span class="table-description">${shortDesc}${descSuffix}</span>
+                </td>
+                <td><small>${dateStr}</small></td>
+                <td>${event.location || '—'}</td>
+                <td><span class="badge-category">${event.category || '—'}</span></td>
+                <td>
+                    ${event.is_accessible 
+                        ? '<span class="badge-accessible">Да</span>' 
+                        : '<span class="badge-not-accessible">Нет</span>'}
+                </td>
+                <td class="action-buttons">
+                    <a href="/admin/events/${event.id}/edit" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <button onclick="deleteEvent(${event.id})" class="btn btn-sm btn-outline-danger">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (!query) {
+        renderEventsTable(allEvents);
+        document.getElementById('countBadge').textContent = allEvents.length;
+        return;
+    }
+    
+    const filtered = allEvents.filter(item => 
+        item.title?.toLowerCase().includes(query) || 
+        item.location?.toLowerCase().includes(query)
+    );
+    
+    renderEventsTable(filtered);
+    document.getElementById('countBadge').textContent = filtered.length;
+});
+
+async function deleteEvent(id) {
+    if (!confirm('Удалить это событие?')) return;
+    
+    try {
+        await apiRequest(`/api/events/${id}`, { method: 'DELETE' });
+        loadEvents();
+    } catch (err) {
+        alert('Ошибка удаления: ' + err.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadEvents);
+</script>
+{% endblock %}

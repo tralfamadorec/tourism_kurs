@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Контакты ТИЦ | Ачинск туристический{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="card-title mb-4">Контактная информация</h2>
+                
+                <div class="mb-4">
+                    <h5 class="text-primary">Туристический информационный центр г. Ачинска</h5>
+                    <p class="mb-1"><strong>Адрес:</strong> 662160, Красноярский край, г. Ачинск, пр. Мира, д. 15</p>
+                    <p class="mb-1"><strong>Телефон:</strong> <a href="tel:+73915123456">+7 (39151) 2-34-56</a></p>
+                    <p class="mb-1"><strong>Email:</strong> <a href="mailto:tic@achinsk.ru">tic@achinsk.ru</a></p>
+                    <p class="mb-1"><strong>Сайт:</strong> <a href="https://achinsk-tourism.ru" target="_blank">achinsk-tourism.ru</a></p>
+                </div>
+                
+                <div class="mb-4">
+                    <h5 class="text-primary">Режим работы</h5>
+                    <ul class="list-unstyled">
+                        <li>Понедельник–Пятница: 9:00–18:00</li>
+                        <li>Суббота: 10:00–15:00</li>
+                        <li>Воскресенье: выходной</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-4">
+                    <h5 class="text-primary">Как нас найти</h5>
+                    <p>Офис расположен в центре города, рядом с автовокзалом. Вход со стороны проспекта Мира.</p>
+                </div>
+                
+                <div class="alert alert-info">
+                    <strong>Есть вопросы или предложения?</strong><br>
+                    Напишите нам напрямую: 
+                    <a href="mailto:tic@achinsk.ru?subject=Вопрос по сайту «Ачинск туристический»" class="alert-link">tic@achinsk.ru</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}{{ 'Редактировать' if is_edit else 'Новый' }} шаблон открытки{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center">
+    <h2>{{ title }}</h2>
+    <a href="/admin/postcards" class="btn btn-outline-secondary">← Назад</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form id="postcardForm">
+            <div class="form-group">
+                <label for="title">Название шаблона *</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+
+            <div class="photo-upload-block">
+                <h4>Изображение открытки *</h4>
+                
+                <div id="currentImageContainer" class="current-photo-preview d-none">
+                    <p class="small text-muted mb-3">Текущее изображение:</p>
+                    <img id="currentImage" src="" alt="Текущее изображение"><br>
+                    <button type="button" id="deleteImageBtn" class="btn btn-sm btn-outline-danger mt-3">Удалить изображение</button>
+                </div>
+
+                <hr>
+
+                <div class="photo-upload-section">
+                    <label>Загрузить с компьютера:</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="imageFile" accept="image/*">
+                        <button type="button" id="uploadImageBtn" class="btn btn-outline-primary">Загрузить</button>
+                    </div>
+                </div>
+
+                <div class="photo-upload-section">
+                    <label>Или вставьте ссылку:</label>
+                    <input type="url" class="form-control" id="imageLink" placeholder="https://...">
+                </div>
+
+                <input type="hidden" id="image_url" name="image_url">
+                <small class="form-text text-muted">Изображение обязательно для создания шаблона</small>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Описание</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+
+            <div id="formError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="/admin/postcards" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('postcardForm');
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const itemId = {{ item_id if is_edit else 'null' }};
+
+const imageFileInput = document.getElementById('imageFile');
+const uploadImageBtn = document.getElementById('uploadImageBtn');
+const imageLinkInput = document.getElementById('imageLink');
+const imageUrlInput = document.getElementById('image_url');
+const currentImageContainer = document.getElementById('currentImageContainer');
+const currentImage = document.getElementById('currentImage');
+const deleteImageBtn = document.getElementById('deleteImageBtn');
+
+if (isEdit && itemId) loadPostcardData(itemId);
+
+async function loadPostcardData(id) {
+    try {
+        const data = await apiRequest(`/api/postcards/${id}`);
+        document.getElementById('title').value = data.title || '';
+        document.getElementById('description').value = data.description || '';
+        
+        if (data.image_url) {
+            imageUrlInput.value = data.image_url;
+            currentImage.src = data.image_url;
+            currentImageContainer.classList.remove('d-none');
+            deleteImageBtn.classList.remove('d-none');
+            if (data.image_url.startsWith('http')) imageLinkInput.value = data.image_url;
+        }
+    } catch (err) {
+        document.getElementById('formError').textContent = 'Ошибка загрузки: ' + err.message;
+        document.getElementById('formError').classList.remove('d-none');
+    }
+}
+
+deleteImageBtn.addEventListener('click', () => {
+    imageUrlInput.value = '';
+    imageLinkInput.value = '';
+    imageFileInput.value = '';
+    currentImage.src = '';
+    currentImageContainer.classList.add('d-none');
+    deleteImageBtn.classList.add('d-none');
+});
+
+uploadImageBtn.addEventListener('click', async () => {
+    const file = imageFileInput.files[0];
+    if (!file) return alert('Выберите файл');
+    
+    uploadImageBtn.disabled = true;
+    uploadImageBtn.textContent = 'Загрузка...';
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const res = await fetch('/api/upload/', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${getCookie('access_token')}` },
+            body: formData
+        });
+        if (!res.ok) throw new Error((await res.json()).detail || 'Ошибка');
+        const data = await res.json();
+        
+        imageUrlInput.value = data.file_url;
+        currentImage.src = data.file_url;
+        currentImageContainer.classList.remove('d-none');
+        deleteImageBtn.classList.remove('d-none');
+        imageLinkInput.value = '';
+        alert('Изображение загружено');
+    } catch (e) {
+        alert('❌ ' + e.message);
+    } finally {
+        uploadImageBtn.disabled = false;
+        uploadImageBtn.textContent = 'Загрузить';
+    }
+});
+
+imageLinkInput.addEventListener('input', (e) => {
+    imageUrlInput.value = e.target.value;
+    if (e.target.value && e.target.value.startsWith('http')) {
+        currentImage.src = e.target.value;
+        currentImageContainer.classList.remove('d-none');
+        deleteImageBtn.classList.remove('d-none');
+        imageFileInput.value = '';
+    }
+});
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+
+    const data = {};
+    
+    new FormData(form).forEach((val, key) => {
+        if (key !== 'image_url' && val !== '') data[key] = val;
+    });
+
+    const currentImageVal = imageUrlInput.value.trim();
+    data.image_url = currentImageVal === '' ? null : currentImageVal;
+
+    try {
+        const url = isEdit ? `/api/postcards/${itemId}` : '/api/postcards/';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookie('access_token')}` },
+            body: JSON.stringify(data)
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Ошибка сохранения');
+        }
+        
+        successDiv.classList.remove('d-none');
+        setTimeout(() => window.location.href = '/admin/postcards', 1500);
+        
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}

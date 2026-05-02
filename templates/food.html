@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Где вкусно поесть | Ачинск туристический{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>Где вкусно поесть в Ачинске</h1>
+    <p class="text-muted">Рестораны, кафе и закусочные города</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название или кухня...">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Тип заведения</label>
+                <select id="typeFilter" class="form-select form-select-sm">
+                    <option value="">Любой тип</option>
+                    <option value="Ресторан">Ресторан</option>
+                    <option value="Кафе">Кафе</option>
+                    <option value="Кофейня">Кофейня</option>
+                    <option value="Столовая">Столовая</option>
+                    <option value="Бар">Бар/Паб</option>
+                    <option value="Фастфуд">Фастфуд</option>
+                    <option value="Кондитерская">Кондитерская</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Доступность</label>
+                <select id="accessibilityFilter" class="form-select form-select-sm">
+                    <option value="">Любая</option>
+                    <option value="accessible">Для МГН</option>
+                    <option value="parking">Парковка</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label small text-muted d-block mb-2">Сортировка</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="rating">По рейтингу</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="avg_price">По цене</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="name">По алфавиту</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="foodsList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка заведений...</p>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4">
+    <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
+        Показать еще
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+const limit = 6;
+let currentSort = 'rating';
+
+async function loadFoods(append = false) {
+    const listEl = document.getElementById('foodsList');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (!append) {
+        listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+    }
+    
+    try {
+        const searchInput = document.getElementById('searchInput');
+        const typeFilter = document.getElementById('typeFilter');
+        const accessibilityFilter = document.getElementById('accessibilityFilter');
+        
+        const search = searchInput ? searchInput.value : '';
+        const cuisineType = typeFilter ? typeFilter.value : '';
+        const isAccessible = accessibilityFilter ? accessibilityFilter.value === 'accessible' : false;
+        
+        let url = `/api/foods/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
+        
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (cuisineType && cuisineType !== '') url += `&cuisine=${encodeURIComponent(cuisineType)}`;
+        if (isAccessible) url += `&accessibility=accessible`;
+        url += `&sort=${currentSort}`;
+
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`Ошибка сервера: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!append) listEl.innerHTML = '';
+        
+        if (data.length === 0 && currentPage === 1) {
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Заведения не найдены</p></div>';
+            if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        if (data.length === 0) {
+            if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        data.forEach(item => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            
+            // Генерируем звёздочки рейтинга без emoji
+            let starsHtml = '';
+            const rating = Math.round(item.rating || 0);
+            for (let i = 0; i < 5; i++) {
+                if (i < rating) {
+                    starsHtml += '<span class="text-warning">★</span>';
+                } else {
+                    starsHtml += '<span class="text-muted">☆</span>';
+                }
+            }
+            
+            // В блоке генерации карточки замените секцию с рейтингом на:
+
+            col.innerHTML = `
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
+                    ${item.photo_url ? `<img src="${item.photo_url}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold">${item.rating ? item.rating.toFixed(1) : '—'} ★</small>
+                    </div>
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">${item.name}</h5>
+                        <p class="card-text small text-muted">${item.address || 'Адрес не указан'}</p>
+                        ${item.cuisine ? `<p class="card-text small">${item.cuisine}</p>` : ''}
+                        <p class="card-text small">${item.description?.substring(0, 80) || ''}${item.description?.length > 80 ? '...' : ''}</p>
+                        ${item.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Средний чек:</span>
+                            <span class="fw-bold text-primary">${item.avg_price ? item.avg_price + ' ₽' : '—'}</span>
+                        </li>
+                    </ul>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/food/${item.id}" class="btn btn-outline-primary w-100">Подробнее</a>
+                    </div>
+                </div>
+            `;
+            listEl.appendChild(col);
+        });
+        
+        if (loadMoreBtn) {
+            if (data.length === limit) {
+                loadMoreBtn.classList.remove('d-none');
+            } else {
+                loadMoreBtn.classList.add('d-none');
+            }
+        }
+        
+    } catch (err) {
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadFoods()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
+    }
+}
+
+// инициализация обработчиков
+const searchInput = document.getElementById('searchInput');
+const typeFilter = document.getElementById('typeFilter');
+const accessibilityFilter = document.getElementById('accessibilityFilter');
+const resetBtn = document.getElementById('resetBtn');
+const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+if (searchInput) searchInput.addEventListener('input', () => { currentPage = 1; loadFoods(); });
+if (typeFilter) typeFilter.addEventListener('change', () => { currentPage = 1; loadFoods(); });
+if (accessibilityFilter) accessibilityFilter.addEventListener('change', () => { currentPage = 1; loadFoods(); });
+
+// сортировка
+document.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentSort = e.target.dataset.sort;
+        currentPage = 1;
+        loadFoods();
+    });
+});
+
+// сброс
+if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        if (typeFilter) typeFilter.value = '';
+        if (accessibilityFilter) accessibilityFilter.value = '';
+        currentSort = 'rating';
+        currentPage = 1;
+        
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        const defaultSort = document.querySelector('[data-sort="rating"]');
+        if (defaultSort) defaultSort.classList.add('active');
+        
+        loadFoods();
+    });
+}
+
+// подгрузка
+if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', () => {
+        currentPage++;
+        loadFoods(true);
+    });
+}
+
+// старт
+document.addEventListener('DOMContentLoaded', () => loadFoods());
+</script>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}

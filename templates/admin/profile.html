@@ -1,0 +1,357 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Мой профиль{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center mb-4">
+    <h2>Мой профиль</h2>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-body">
+                <h5 class="mb-4">Информация о пользователе</h5>
+                
+                <div class="text-center mb-4">
+                    <div id="profilePhotoContainer" class="d-inline-block"></div>
+                    <br>
+                    <button type="button" class="btn btn-sm btn-primary mt-2" onclick="document.getElementById('photoInput').click()">
+                        <i class="bi bi-camera me-1"></i>Изменить фото
+                    </button>
+                    <input type="file" id="photoInput" class="d-none" accept="image/*" onchange="uploadPhoto(this)">
+                    <small class="text-muted d-block mt-2">Нажмите, чтобы загрузить новое фото</small>
+                </div>
+                
+                <form id="profileForm">
+                    <div class="mb-3">
+                        <label for="userId" class="form-label text-muted small">ID пользователя</label>
+                        <input type="text" class="form-control-plaintext fw-semibold" id="userId" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Имя пользователя *</label>
+                        <input type="text" class="form-control" id="username" required minlength="3" maxlength="50">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Роль</label>
+                        <span id="userRole" class="badge bg-primary">Загрузка...</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Дата регистрации</label>
+                        <p class="form-control-plaintext" id="userCreatedAt">Загрузка...</p>
+                    </div>
+                    
+                    <div id="profileError" class="alert alert-danger d-none" role="alert"></div>
+                    <div id="profileSuccess" class="alert alert-success d-none" role="alert">
+                        <i class="bi bi-check-circle me-2"></i>Профиль обновлён!
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-body">
+                <h5 class="mb-4">Сменить пароль</h5>
+                
+                <form id="changePasswordForm">
+                    <div class="mb-3">
+                        <label for="oldPassword" class="form-label">Текущий пароль *</label>
+                        <input type="password" class="form-control" id="oldPassword" required minlength="8">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Новый пароль *</label>
+                        <input type="password" class="form-control" id="newPassword" required minlength="8">
+                        <div class="form-text">Пароль должен содержать: заглавные и строчные буквы, цифры (мин. 8 символов)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Подтвердите новый пароль *</label>
+                        <input type="password" class="form-control" id="confirmPassword" required minlength="8">
+                    </div>
+                    
+                    <div id="passwordError" class="alert alert-danger d-none" role="alert"></div>
+                    <div id="passwordSuccess" class="alert alert-success d-none" role="alert">
+                        <i class="bi bi-check-circle me-2"></i>Пароль успешно изменён!
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="bi bi-shield-lock me-1"></i>Сменить пароль
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="admin-card mt-4">
+            <div class="admin-card-body">
+                <h5 class="mb-3 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Удаление аккаунта</h5>
+                <p class="text-muted small mb-3">
+                    Это действие необратимо. Ваш аккаунт будет деактивирован, а персональные данные анонимизированы в соответствии с 152-ФЗ. 
+                    Вы не сможете восстановить доступ после удаления.
+                </p>
+                <button type="button" class="btn btn-outline-danger" onclick="confirmDeleteAccount()">
+                    <i class="bi bi-trash me-1"></i>Удалить аккаунт навсегда
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let currentUserId = null;
+let currentPhotoUrl = null;
+
+async function loadUserProfile() {
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) throw new Error('Ошибка загрузки профиля');
+        
+        const user = await response.json();
+        currentUserId = user.id;
+        currentPhotoUrl = user.photo_url || null;
+        
+        document.getElementById('userId').value = user.id;
+        document.getElementById('username').value = user.username;
+        document.getElementById('email').value = user.email;
+        
+        renderProfilePhoto(user.photo_url);
+        
+        const roleBadge = document.getElementById('userRole');
+        if (user.role === 'super_admin') {
+            roleBadge.textContent = 'Супер-админ';
+            roleBadge.className = 'badge bg-danger';
+        } else {
+            roleBadge.textContent = 'Админ';
+            roleBadge.className = 'badge bg-primary';
+        }
+        
+        const createdAt = new Date(user.created_at);
+        document.getElementById('userCreatedAt').textContent = 
+            createdAt.toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+    } catch (err) {
+        showAlert('profileError', 'Не удалось загрузить информацию о профиле');
+    }
+}
+
+function renderProfilePhoto(photoUrl) {
+    const container = document.getElementById('profilePhotoContainer');
+    
+    if (photoUrl) {
+        container.innerHTML = `
+            <div class="position-relative d-inline-block">
+                <img src="${photoUrl}" alt="Фото профиля" class="rounded-circle border border-3"
+                     style="width: 150px; height: 150px; object-fit: cover;">
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="profile-photo-placeholder bg-light d-flex align-items-center justify-content-center rounded-circle border border-3"
+                 style="width: 150px; height: 150px;">
+                <i class="bi bi-person fs-1 text-muted"></i>
+            </div>
+        `;
+    }
+}
+
+async function uploadPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+        showAlert('profileError', 'Размер файла не должен превышать 5 МБ');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        showAlert('profileError', 'Загрузите изображение (JPG, PNG, WebP)');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch('/api/upload/', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Ошибка загрузки');
+        }
+        
+        const data = await res.json();
+        currentPhotoUrl = data.file_url;
+        renderProfilePhoto(data.file_url);
+        await updateProfilePhoto(data.file_url);
+        showAlert('profileSuccess', 'Фото профиля обновлено!');
+        
+    } catch (err) {
+        showAlert('profileError', err.message);
+    }
+    
+    input.value = '';
+}
+
+async function updateProfilePhoto(photoUrl) {
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('/api/auth/profile/photo', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ photo_url: photoUrl })
+        });
+        
+        if (!response.ok) throw new Error('Ошибка сохранения фото');
+        
+    } catch (err) {
+        console.error('Ошибка:', err);
+    }
+}
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('/api/auth/profile', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ username: username, email: email })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Ошибка сохранения');
+        }
+        
+        showAlert('profileSuccess', 'Профиль успешно обновлён!');
+        hideAlert('profileError');
+        
+    } catch (err) {
+        showAlert('profileError', err.message);
+        hideAlert('profileSuccess');
+    }
+});
+
+document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (newPassword !== confirmPassword) {
+        showAlert('passwordError', 'Новые пароли не совпадают');
+        return;
+    }
+    
+    if (!/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)/.test(newPassword)) {
+        showAlert('passwordError', 'Пароль должен содержать заглавные и строчные буквы, а также цифры');
+        return;
+    }
+    
+    if (newPassword.length < 8) {
+        showAlert('passwordError', 'Пароль должен содержать минимум 8 символов');
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Ошибка сервера');
+        }
+        
+        showAlert('passwordSuccess', 'Пароль успешно изменён!');
+        hideAlert('passwordError');
+        document.getElementById('changePasswordForm').reset();
+        setTimeout(() => hideAlert('passwordSuccess'), 3000);
+        
+    } catch (err) {
+        showAlert('passwordError', err.message);
+        hideAlert('passwordSuccess');
+    }
+});
+
+function confirmDeleteAccount() {
+    if (confirm('ВНИМАНИЕ: Вы уверены, что хотите удалить свой аккаунт?\n\nЭто действие нельзя отменить. Все ваши данные будут обезличены, а доступ утерян.')) {
+        deleteAccount();
+    }
+}
+
+async function deleteAccount() {
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('/api/auth/me', {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Не удалось удалить аккаунт');
+        }
+
+        localStorage.removeItem('access_token');
+        alert('Ваш аккаунт успешно удален. Данные анонимизированы.');
+        window.location.href = '/';
+        
+    } catch (err) {
+        showAlert('profileError', err.message);
+    }
+}
+
+function showAlert(elementId, message) {
+    const el = document.getElementById(elementId);
+    el.textContent = message;
+    el.classList.remove('d-none');
+}
+
+function hideAlert(elementId) {
+    document.getElementById(elementId).classList.add('d-none');
+}
+
+document.addEventListener('DOMContentLoaded', loadUserProfile);
+</script>
+{% endblock %}

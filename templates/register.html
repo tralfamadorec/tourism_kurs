@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Регистрация сотрудника ТИЦ{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-card-body">
+            <h3 class="login-title">Регистрация сотрудника ТИЦ</h3>
+            
+            <form id="registerForm">
+                <div class="login-form-group">
+                    <label for="username">Имя пользователя *</label>
+                    <input type="text" class="login-form-control" id="username" name="username" 
+                           required minlength="3" maxlength="50" 
+                           pattern="^[a-zA-Z0-9_-]+$"
+                           placeholder="Латиница, цифры, _ -">
+                    <small class="text-muted">3-50 символов, только латиница</small>
+                </div>
+                
+                <div class="login-form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" class="login-form-control" id="email" name="email" 
+                           required 
+                           placeholder="example@tic-achinsk.ru">
+                </div>
+                
+                <div class="login-form-group">
+                    <label for="password">Пароль *</label>
+                    <input type="password" class="login-form-control" id="password" name="password" 
+                           required minlength="8" maxlength="128"
+                           placeholder="Минимум 8 символов">
+                    <small class="text-muted">Минимум 8 символов, заглавная, строчная буква и цифра</small>
+                </div>
+                
+                <div class="login-form-group">
+                    <label for="confirm_password">Подтвердите пароль *</label>
+                    <input type="password" class="login-form-control" id="confirm_password" 
+                           required minlength="8"
+                           placeholder="Повторите пароль">
+                </div>
+
+                <div class="login-form-group">
+                    <label for="registry_key">Ключ регистрации *</label>
+                    <input type="text" class="login-form-control" id="registry_key" name="registry_key" 
+                           required placeholder="Введите ключ от администратора">
+                    <small class="text-muted">Ключ выдаётся администратором ТИЦ</small>
+                </div>
+                
+                <div id="registerError" class="login-error d-none" role="alert"></div>
+                <div id="registerSuccess" class="login-success d-none" role="alert">
+                    <i class="bi bi-check-circle me-1"></i>Регистрация успешна! Теперь вы можете войти.
+                </div>
+
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="consent" name="consent" required>
+                    <label class="form-check-label small" for="consent">
+                        Я даю согласие на обработку персональных данных в соответствии с 
+                        <a href="/privacy-policy" target="_blank">Политикой конфиденциальности</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="login-submit-btn">Зарегистрироваться</button>
+            </form>
+            
+            <div class="login-footer">
+                <small>Уже есть аккаунт? <a href="/login">Войти</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const registryKey = document.getElementById('registry_key').value;
+    const consent = document.getElementById('consent').checked;  // ← ДОБАВЛЕНО: получение значения чекбокса
+    
+    const errorDiv = document.getElementById('registerError');
+    const successDiv = document.getElementById('registerSuccess');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+    
+    if (password !== confirmPassword) {
+        errorDiv.innerHTML = '<i class="bi bi-x-circle me-1"></i>Пароли не совпадают';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+    
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    
+    if (!hasUpperCase || !hasLowerCase || !hasDigit) {
+        errorDiv.innerHTML = '<i class="bi bi-x-circle me-1"></i>Пароль должен содержать заглавные и строчные буквы, а также цифры';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Регистрация...';
+    
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Registry-Key': registryKey
+            },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: password,
+                consent: consent  // ← ДОБАВЛЕНО: передача согласия в запросе
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            let errorMessage = 'Ошибка регистрации';
+            
+            if (typeof data.detail === 'string') {
+                errorMessage = data.detail;
+            } else if (Array.isArray(data.detail)) {
+                errorMessage = data.detail.map(err => err.msg).join(', ');
+            } else if (data.detail && typeof data.detail === 'object') {
+                errorMessage = JSON.stringify(data.detail);
+            }
+            
+            throw new Error(errorMessage);
+        }
+        
+        successDiv.classList.remove('d-none');
+        submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Зарегистрировано!';
+        
+        document.getElementById('registerForm').reset();
+        
+        setTimeout(() => {
+            window.location.href = '/login?registered=1';
+        }, 2000);
+        
+    } catch (error) {
+        errorDiv.innerHTML = '<i class="bi bi-x-circle me-1"></i>' + error.message;
+        errorDiv.classList.remove('d-none');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Зарегистрироваться';
+    }
+});
+</script>
+{% endblock %}

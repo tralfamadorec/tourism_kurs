@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Афиша событий Ачинска{% endblock %}
+
+{% block content %}
+<div class="text-center py-4 bg-light rounded mb-4">
+    <h1>События в Ачинске</h1>
+    <p class="text-muted">Афиша мероприятий, концертов и праздников</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Поиск</label>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Название события...">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Категория</label>
+                <select id="categoryFilter" class="form-select form-select-sm">
+                    <option value="">Все категории</option>
+                    <option value="Концерт">Концерт</option>
+                    <option value="Выставка">Выставка</option>
+                    <option value="Фестиваль">Фестиваль</option>
+                    <option value="Спорт">Спорт</option>
+                    <option value="Детям">Детям</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Место</label>
+                <input type="text" id="locationFilter" class="form-control form-control-sm" placeholder="Например: ДК">
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Сбросить</button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label small text-muted d-block mb-2">Сортировка</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-sort="date_asc">Сначала ближайшие</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="date_desc">Сначала поздние</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-sort="title">По названию</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="eventsList" class="row g-4">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Загрузка событий...</p>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4">
+    <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg px-5 d-none">
+        Показать еще
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+const limit = 6;
+let currentSort = 'date_asc';
+
+async function loadEvents(append = false) {
+    const listEl = document.getElementById('eventsList');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (!append) {
+        listEl.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Загрузка...</p></div>';
+    }
+    
+    try {
+        const search = document.getElementById('searchInput').value;
+        const category = document.getElementById('categoryFilter').value;
+        const location = document.getElementById('locationFilter').value;
+        
+        let url = `/api/events/?limit=${limit}&skip=${(currentPage - 1) * limit}`;
+        
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+        if (location) url += `&location=${encodeURIComponent(location)}`;
+        url += `&sort=${currentSort}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!append) listEl.innerHTML = '';
+        
+        if (data.length === 0 && currentPage === 1) {
+            listEl.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Событий не найдено</p></div>';
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        if (data.length === 0) {
+            loadMoreBtn.classList.add('d-none');
+            return;
+        }
+        
+        data.forEach(event => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            
+            let dateStr = 'Дата не указана';
+            if (event.event_date) {
+                const d = new Date(event.event_date);
+                dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ', ' + 
+                          d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            }
+            
+            col.innerHTML = `
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
+                    ${event.photo_url ? `<img src="${event.photo_url}" class="card-img-top" alt="${event.title}" style="height: 200px; object-fit: cover;">` : '<div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Нет фото</div>'}
+                    
+                    <!-- Дата в правом верхнем углу (вместо рейтинга) -->
+                    <div class="position-absolute top-0 end-0 m-2 bg-white rounded px-2 py-1 shadow-sm" style="z-index: 10;">
+                        <small class="fw-bold text-primary">${dateStr}</small>
+                    </div>
+                    
+                    <div class="card-body">
+                        <span class="badge bg-secondary mb-2">${event.category || 'Событие'}</span>
+                        <h5 class="card-title">${event.title}</h5>
+                        <p class="card-text small text-muted">${event.location || 'Место не указано'}</p>
+                        <p class="card-text small">${event.description?.substring(0, 80) || ''}${event.description?.length > 80 ? '...' : ''}</p>
+                        ${event.is_accessible ? '<span class="badge bg-success mb-2">Доступно для МГН</span>' : ''}
+                    </div>
+                    <div class="card-body pt-0 mt-3">
+                        <a href="/events/${event.id}" class="btn btn-outline-primary w-100">Подробнее</a>
+                    </div>
+                </div>
+            `;
+            listEl.appendChild(col);
+        });
+        
+        if (data.length === limit) {
+            loadMoreBtn.classList.remove('d-none');
+        } else {
+            loadMoreBtn.classList.add('d-none');
+        }
+        
+    } catch (err) {
+        console.error('Ошибка:', err);
+        listEl.innerHTML = `<div class="col-12 text-center text-danger py-5">
+            <p>Ошибка загрузки: ${err.message}</p>
+            <button onclick="loadEvents()" class="btn btn-sm btn-outline-danger mt-2">Повторить</button>
+        </div>`;
+        if (loadMoreBtn) loadMoreBtn.classList.add('d-none');
+    }
+}
+
+// обработчики фильтров
+document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; loadEvents(); });
+document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; loadEvents(); });
+document.getElementById('locationFilter').addEventListener('input', () => { currentPage = 1; loadEvents(); });
+
+// сортировка
+document.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentSort = e.target.dataset.sort;
+        currentPage = 1;
+        loadEvents();
+    });
+});
+
+// сброс
+document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('locationFilter').value = '';
+    currentSort = 'date_asc';
+    currentPage = 1;
+    
+    document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-sort="date_asc"]').classList.add('active');
+    
+    loadEvents();
+});
+
+// подгрузка
+document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    currentPage++;
+    loadEvents(true);
+});
+
+// старт
+document.addEventListener('DOMContentLoaded', () => loadEvents());
+</script>
+
+<style>
+.hover-shadow { transition: box-shadow 0.3s ease; }
+.hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
+</style>
+{% endblock %}

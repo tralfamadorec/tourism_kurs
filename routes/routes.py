@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
 
 from database import get_db
 from models import Route
@@ -13,16 +13,32 @@ router = APIRouter(prefix="/api/routes", tags=["Маршруты"])
 
 @router.get("/", response_model=List[RouteResponse])
 async def get_routes(
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Вернуть не более N записей"),
+    limit: int = Query(50, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    search: Optional[str] = Query(None),
+    transport_type: Optional[str] = Query(None),
+    difficulty: Optional[str] = Query(None),
+    sort: str = Query("title", description="title, duration_asc, duration_desc"),
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(Route).where(Route.is_active == True).order_by(Route.title.asc())
+    query = select(Route).where(Route.is_active == True)
     
-    count_query = select(func.count(Route.id)).where(Route.is_active == True)
-    total = await db.scalar(count_query)
-    
-    result = await db.execute(query.offset(skip).limit(limit))
+    if search:
+        query = query.where(Route.title.ilike(f"%{search}%"))
+    if transport_type:
+        query = query.where(Route.transport_type.ilike(f"%{transport_type}%"))
+    if difficulty:
+        query = query.where(Route.difficulty.ilike(f"%{difficulty}%"))
+        
+    if sort == "duration_asc":
+        query = query.order_by(Route.duration_hours.asc())
+    elif sort == "duration_desc":
+        query = query.order_by(Route.duration_hours.desc())
+    else:
+        query = query.order_by(Route.title.asc())
+        
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 @router.get("/{route_id}", response_model=RouteResponse)

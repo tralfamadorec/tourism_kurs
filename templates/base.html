@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ачинск туристический{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/a11y.css">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">Ачинск Туристический</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Все разделы
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="/accommodations">Размещение</a></li>
+                            <li><a class="dropdown-item" href="/attractions">Достопримечательности</a></li>
+                            <li><a class="dropdown-item" href="/events">События</a></li>
+                            <li><a class="dropdown-item" href="/food">Где вкусно?</a></li>
+                            <li><a class="dropdown-item" href="/postcards">Открытки</a></li>
+                            <li><a class="dropdown-item" href="/routes">Маршруты</a></li>
+                            <li><a class="dropdown-item" href="/safety">Безопасность</a></li>
+                            <li><a class="dropdown-item" href="/souvenirs">Сувениры</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/map">Интерактивная карта</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contacts">Контакты</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/inclusive">Инклюзивный туризм</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <select id="a11yScheme" class="form-select form-select-sm" style="width: auto; max-width: 200px;" aria-label="Цветовая схема">
+                        <option value="default">Обычная версия</option>
+                        <option value="bw">Чёрный на белом</option>
+                        <option value="wb">Белый на чёрном</option>
+                        <option value="blue">Тёмно-синий на голубом</option>
+                        <option value="brown">Коричневый на бежевом</option>
+                        <option value="green">Зелёный на тёмно-коричневом</option>
+                    </select>
+                    
+                    <a href="/admin" class="btn btn-outline-light btn-sm d-none" id="adminBtn">Админ-панель</a>
+                    <span id="userStatus" class="text-white me-3 small"></span>
+                    <a href="/login" class="btn btn-outline-light btn-sm" id="authBtn">Вход</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4 mb-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-light text-center py-3 border-top" id="footer">
+        <div class="container">
+            <p class="mb-0 text-muted">Туристический портал Ачинского муниципального округа</p>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/main.js"></script>
+    {% block scripts %}{% endblock %}
+
+    <script>
+    function getToken() {
+        return localStorage.getItem('access_token') || (typeof getCookie === 'function' ? getCookie('access_token') : null);
+    }
+
+    function isTokenExpired(token) {
+        if (!token) return true;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.exp * 1000 < Date.now();
+        } catch { return true; }
+    }
+
+    function updateAuthUI() {
+        const token = getToken();
+        const adminBtn = document.getElementById('adminBtn');
+        const authBtn = document.getElementById('authBtn');
+        const userStatus = document.getElementById('userStatus');
+        
+        if (token && !isTokenExpired(token)) {
+            if (adminBtn) adminBtn.classList.remove('d-none');
+            if (authBtn) {
+                authBtn.textContent = 'Выход';
+                authBtn.href = '#';
+                authBtn.onclick = (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('access_token');
+                    if (typeof delCookie === 'function') delCookie('access_token');
+                    window.location.href = '/';
+                };
+            }
+            if (userStatus) userStatus.textContent = 'Вы вошли';
+        } else {
+            if (adminBtn) adminBtn.classList.add('d-none');
+            if (authBtn) {
+                authBtn.textContent = 'Вход';
+                authBtn.href = '/login';
+                authBtn.onclick = null;
+            }
+            if (userStatus) userStatus.textContent = '';
+        }
+    }
+
+    function startSessionMonitor() {
+        const token = getToken();
+        if (!token || isTokenExpired(token)) {
+            updateAuthUI();
+            return;
+        }
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const expTime = payload.exp * 1000;
+            const now = Date.now();
+            const timeLeft = expTime - now;
+            const warnTime = 5 * 60 * 1000;
+
+            if (timeLeft <= 0) {
+                handleSessionExpired();
+                return;
+            }
+
+            if (timeLeft > warnTime) {
+                setTimeout(() => {
+                    if (confirm('Ваша сессия истекает через 5 минут. Перезайти сейчас?')) {
+                        window.location.href = '/login';
+                    }
+                }, timeLeft - warnTime);
+            }
+
+            setTimeout(() => {
+                handleSessionExpired();
+            }, timeLeft);
+        } catch {
+            handleSessionExpired();
+        }
+    }
+
+    function handleSessionExpired() {
+        localStorage.removeItem('access_token');
+        if (typeof delCookie === 'function') delCookie('access_token');
+        alert('Сессия завершена. Пожалуйста, войдите снова.');
+        window.location.href = '/login';
+    }
+
+    // версия для слабовидящих (ГОСТ Р 52872-2019)
+    function initA11yScheme() {
+        const select = document.getElementById('a11yScheme');
+        const body = document.body;
+        
+        // загрузка сохранённой схемы
+        const saved = localStorage.getItem('a11yScheme') || 'default';
+        applyA11yScheme(saved);
+        if (select) select.value = saved;
+        
+        // обработчик выбора
+        select?.addEventListener('change', function() {
+            const scheme = this.value;
+            applyA11yScheme(scheme);
+            localStorage.setItem('a11yScheme', scheme);
+        });
+        
+        // горячие клавиши: Ctrl+Alt+1..5
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.altKey && select) {
+                const map = {'1':'bw','2':'wb','3':'blue','4':'brown','5':'green'};
+                if (map[e.key]) {
+                    e.preventDefault();
+                    select.value = map[e.key];
+                    applyA11yScheme(map[e.key]);
+                    localStorage.setItem('a11yScheme', map[e.key]);
+                }
+            }
+        });
+    }
+
+    function applyA11yScheme(scheme) {
+        const body = document.body;
+        // удаляем все схемы
+        body.classList.remove('a11y-bw','a11y-wb','a11y-blue','a11y-brown','a11y-green');
+        // применяем выбранную (если не default)
+        if (scheme !== 'default') {
+            body.classList.add('a11y-' + scheme);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateAuthUI();
+        startSessionMonitor();
+        initA11yScheme();
+    });
+    </script>
+</body>
+
+</html>

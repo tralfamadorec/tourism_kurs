@@ -1,0 +1,98 @@
+[data-theme="sep1"] {
+    --gradient-header: linear-gradient(135deg, rgb(215, 100, 19), rgb(211, 175, 20));
+    --gradient-primary: linear-gradient(135deg, rgb(215, 100, 19), rgb(211, 175, 20));
+    --gradient-btn-hover: linear-gradient(135deg, rgb(215, 100, 19), rgb(211, 175, 20));
+    --gradient-card-top: linear-gradient(135deg, rgb(215, 100, 19), rgb(211, 175, 20));
+    
+    --color-primary: #8b4513;
+    --color-primary-hover: #6b3610;
+    --color-accent: #f1c40f;
+    --color-accent-hover: #f4d03f;
+    --color-success: #27ae60;
+
+    --hero-overlay-color-1: rgba(215, 100, 19, 0.4);
+    --hero-overlay-color-2: rgba(211, 175, 20, 0.4);
+    --hero-blur: 2px; 
+}
+
+[data-theme="sep1"] .object-card-badge,
+[data-theme="sep1"] .event-card-date-badge,
+[data-theme="sep1"] .food-card-rating-badge,
+[data-theme="sep1"] .inclusive-card-type-badge {
+    background: linear-gradient(135deg, #d35400 0%, #f1c40f 100%) !important;
+    color: #fff !important;
+    border: 1px solid #8b4513 !important;
+}
+
+[data-theme="sep1"] .btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+[data-theme="sep1"] .btn-primary:hover {
+    background: var(--gradient-btn-hover);
+    border-color: var(--color-accent-hover);
+}
+
+[data-theme="sep1"] .card:hover,
+[data-theme="sep1"] .object-card:hover {
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 4px 14px rgba(241, 196, 15, 0.25);
+}
+
+[data-theme="sep1"] .celebration-toggle {
+    border-color: var(--color-accent);
+    background: rgba(255, 255, 255, 0.95);
+}
+[data-theme="sep1"] .celebration-toggle:hover {
+    border-color: var(--color-accent-hover);
+    background: #fff;
+}
+[data-theme="sep1"] .celebration-toggle i {
+    color: var(--color-primary);
+}
+[data-theme="sep1"] .celebration-toggle:hover i {
+    color: var(--color-primary-hover);
+}
+
+.sep1-leaf {
+    position: fixed;
+    top: -30px;
+    font-size: 24px;
+    pointer-events: none;
+    z-index: 9990;
+    opacity: 0.9;
+    animation: leafFall linear forwards;
+    user-select: none;
+}
+
+@keyframes leafFall {
+    0% {
+        transform: translateY(0) rotate(0deg) translateX(0);
+        opacity: 0.9;
+    }
+    25% {
+        transform: translateY(25vh) rotate(90deg) translateX(10px);
+    }
+    50% {
+        transform: translateY(50vh) rotate(180deg) translateX(-5px);
+    }
+    75% {
+        transform: translateY(75vh) rotate(270deg) translateX(8px);
+    }
+    100% {
+        transform: translateY(120vh) rotate(360deg) translateX(0);
+        opacity: 0;
+    }
+}
+
+body.bvi-active .sep1-leaf,
+body.bvi-active .celebration-toggle {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .sep1-leaf {
+        font-size: 20px;
+    }
+}
