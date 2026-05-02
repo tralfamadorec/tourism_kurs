@@ -1,10 +1,62 @@
+# python
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
 venv/
+*.db
+*.sqlite3
+
+# environment
 .env
+.env.local
+.env.*.local
+
+# ide
 .vscode/
 .idea/
 *.swp
 *.swo
-alembic/versions/*.pyc 
+*.iml
+*.ipr
+*.iws
+
+# testing & coverage
+.pytest_cache/
+htmlcov/
+.coverage
+artifacts/
+test_results.txt
+
+# build & distribution
+build/
+dist/
+*.egg-info/
+*.egg
+
+# logs & temp
+*.log
+logs/
+*.tmp
+*.temp
+
+# specific
+static/uploads/
+backups/
+project_export.txt
+structure.txt
+settings.json
+
+# os files
+*.Zone.Identifier
+.DS_Store
+Thumbs.db
+
+# db dumps
+*.dump
+*.backup
+*.sql.gz
+
+# alembic
+alembic/versions/*.pyc
+alembic/__pycache__/
