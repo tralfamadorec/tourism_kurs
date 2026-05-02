@@ -1,0 +1,102 @@
+[data-theme="cityday"] {
+    --gradient-header: linear-gradient(225deg, rgb(198, 44, 44) 29%, rgb(193, 159, 14));
+    --gradient-primary: linear-gradient(225deg, rgb(198, 44, 44) 29%, rgb(193, 159, 14));
+    --gradient-btn-hover: linear-gradient(225deg, rgb(198, 44, 44) 29%, rgb(193, 159, 14));
+    --gradient-card-top: linear-gradient(225deg, rgb(198, 44, 44) 29%, rgb(193, 159, 14));
+    
+    --color-primary: #ff6b35;
+    --color-primary-hover: #e55a2b;
+    --color-accent: #ffd166;
+    --color-accent-hover: #ffe08a;
+    --color-success: #06d6a0;
+
+    --hero-overlay-color-1: rgba(198, 44, 44, 0.4);
+    --hero-overlay-color-2: rgba(193, 159, 14, 0.4);
+    --hero-blur: 2px; 
+}
+
+[data-theme="cityday"] .object-card-badge,
+[data-theme="cityday"] .event-card-date-badge,
+[data-theme="cityday"] .food-card-rating-badge,
+[data-theme="cityday"] .inclusive-card-type-badge {
+    background: linear-gradient(135deg, #ff6b35 0%, #ffd166 100%) !important;
+    color: #fff !important;
+    border: 1px solid #e55a2b !important;
+}
+
+[data-theme="cityday"] .btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+
+[data-theme="cityday"] .btn-primary:hover {
+    background: var(--gradient-btn-hover);
+    border-color: var(--color-accent-hover);
+}
+
+[data-theme="cityday"] .card:hover,
+[data-theme="cityday"] .object-card:hover {
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 4px 14px rgba(255, 209, 102, 0.3);
+}
+
+[data-theme="cityday"] .celebration-toggle {
+    border-color: var(--color-accent);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="cityday"] .celebration-toggle:hover {
+    border-color: var(--color-accent-hover);
+    background: #fff;
+}
+
+[data-theme="cityday"] .celebration-toggle i {
+    color: var(--color-primary);
+}
+
+[data-theme="cityday"] .celebration-toggle:hover i {
+    color: var(--color-primary-hover);
+}
+
+.cityday-balloon {
+    position: fixed;
+    bottom: -100px;
+    width: 36px;
+    height: 46px;
+    border-radius: 50%;
+    animation: floatUp linear infinite;
+    pointer-events: none;
+    z-index: 9990;
+    opacity: 0.85;
+    box-shadow: inset -5px -5px 10px rgba(0,0,0,0.1);
+}
+.cityday-balloon::after {
+    content: '';
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 18px;
+    background: rgba(0,0,0,0.25);
+}
+
+@keyframes floatUp {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+    10%  { opacity: 0.85; }
+    90%  { opacity: 0.85; }
+    100% { transform: translateY(-120vh) rotate(12deg); opacity: 0; }
+}
+
+body.bvi-active .cityday-balloon {
+    display: none !important;
+}
+
+body.bvi-active canvas.confetti-canvas {
+    display: none !important;
+}
+
+body.bvi-active .celebration-toggle {
+    display: none !important;
+}

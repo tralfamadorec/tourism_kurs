@@ -1,0 +1,107 @@
+[data-theme="may9"] {
+    --gradient-header: linear-gradient(135deg, rgb(17, 17, 17) 0%, rgb(255, 152, 0) 100%);
+    --gradient-primary: linear-gradient(135deg, #111 0%, #ff9800 100%);
+    --gradient-btn-hover: linear-gradient(135deg, #333 0%, #ffb74d 100%);
+    --gradient-card-top: linear-gradient(135deg, #212121 0%, #ffa726 100%);
+    
+    --color-primary: #d84315;
+    --color-primary-hover: #bf360c;
+    --color-accent: #ffb300;
+    --color-accent-hover: #ffc107;
+    --color-success: #2e7d32;
+
+    --hero-overlay-color-1: rgba(17, 17, 17, 0.4);
+    --hero-overlay-color-2: rgba(255, 152, 0, 0.4);
+    --hero-blur: 2px; 
+}
+
+[data-theme="may9"] .object-card-badge,
+[data-theme="may9"] .event-card-date-badge,
+[data-theme="may9"] .food-card-rating-badge,
+[data-theme="may9"] .inclusive-card-type-badge {
+    background: linear-gradient(135deg, #ff9800 0%, #111 100%) !important;
+    color: #fff !important;
+    border: 1px solid #ffb300 !important;
+}
+
+[data-theme="may9"] .btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+[data-theme="may9"] .btn-primary:hover {
+    background: var(--gradient-btn-hover);
+    border-color: var(--color-accent-hover);
+}
+
+[data-theme="may9"] .card:hover,
+[data-theme="may9"] .object-card:hover {
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 4px 14px rgba(255, 152, 0, 0.25);
+}
+
+[data-theme="may9"] .celebration-toggle {
+    border-color: var(--color-accent);
+    background: rgba(255, 255, 255, 0.95);
+}
+[data-theme="may9"] .celebration-toggle:hover {
+    border-color: var(--color-accent-hover);
+    background: #fff;
+}
+[data-theme="may9"] .celebration-toggle i {
+    color: var(--color-primary);
+}
+
+.may9-ribbon {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    margin-top: -40px;
+    
+    background: repeating-linear-gradient(
+        180deg,
+        #111 0%,
+        #111 20%,
+        #ff9800 20%,
+        #ff9800 40%,
+        #111 40%,
+        #111 60%,
+        #ff9800 60%,
+        #ff9800 80%,
+        #111 80%,
+        #111 100%
+    );
+    
+    z-index: -1;
+    pointer-events: none;
+    
+    opacity: 0.75;
+    
+    animation: ribbonWave 3s ease-in-out infinite;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+@keyframes ribbonWave {
+    0%, 100% {
+        transform: translateY(-6px) skewY(1.5deg) scaleY(0.99);
+    }
+    50% {
+        transform: translateY(6px) skewY(-1.5deg) scaleY(1.01);
+    }
+}
+
+@media (max-width: 768px) {
+    .may9-ribbon {
+        height: 60px;
+        margin-top: -30px;
+        animation-duration: 3s;
+    }
+}
+
+body.bvi-active .may9-ribbon,
+body.bvi-active .celebration-toggle {
+    display: none !important;
+}

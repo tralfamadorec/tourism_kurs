@@ -1,0 +1,139 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Управление темами{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center mb-4">
+    <h2>Управление темами оформления</h2>
+</div>
+
+<div id="themeAlert" class="alert d-none" role="alert"></div>
+
+<div class="row g-4" id="themesGrid">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Загрузка тем...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Градиенты синхронизированы с CSS-файлами в static/css/themes/
+const availableThemes = [
+    {
+        id: 'default',
+        name: 'Стандартная',
+        description: 'Классическая тема ТИЦ Ачинска',
+        gradient: 'linear-gradient(135deg, #1260CC 0%, #F57C00 100%)'
+    },
+    {
+        id: 'newyear',
+        name: 'Новый год',
+        description: 'Снежинки, красные и зелёные акценты',
+        gradient: 'linear-gradient(135deg, rgb(230, 49, 49), rgb(59, 222, 42))'
+    },
+    {
+        id: 'feb23',
+        name: '23 Февраля',
+        description: 'Защитники Отечества, зелёный и красный',
+        gradient: 'linear-gradient(135deg, #1b5e20 0%, #d32f2f 100%)'
+    },
+    {
+        id: 'mar8',
+        name: '8 Марта',
+        description: 'Весенние цветы, нежные тона',
+        gradient: 'linear-gradient(225deg, rgb(215, 77, 132) 29%, rgb(81, 207, 81))'
+    },
+    {
+        id: 'may9',
+        name: 'День Победы',
+        description: 'Память и слава, георгиевская лента',
+        gradient: 'linear-gradient(135deg, #111 0%, #ff9800 100%)'
+    },
+    {
+        id: 'russia_day',
+        name: 'День России',
+        description: 'Триколор, праздничное настроение',
+        gradient: 'linear-gradient(135deg, #ffffff 0%, #0039a6 50%, #d52b1e 100%)'
+    },
+    {
+        id: 'cityday',
+        name: 'Праздник',
+        description: 'Яркие цвета',
+        gradient: 'linear-gradient(225deg, rgb(198, 44, 44) 29%, rgb(193, 159, 14))'
+    },
+    {
+        id: 'sep1',
+        name: '1 Сентября',
+        description: 'День знаний, школьные акценты',
+        gradient: 'linear-gradient(135deg, rgb(215, 100, 19), rgb(211, 175, 20))'
+    }
+];
+
+let activeThemeId = 'default';
+
+async function loadThemes() {
+    try {
+        const res = await fetch('/themes/active');
+        const data = await res.json();
+        activeThemeId = data.active_theme || 'default';
+        renderThemes();
+    } catch (err) {
+        showAlert('danger', 'Не удалось загрузить темы');
+    }
+}
+
+function renderThemes() {
+    const grid = document.getElementById('themesGrid');
+    grid.innerHTML = '';
+    availableThemes.forEach(theme => {
+        const isActive = theme.id === activeThemeId;
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4';
+        col.innerHTML = `
+            <div class="admin-card h-100" style="border: ${isActive ? '3px solid var(--bs-success)' : '1px solid #dee2e6'};">
+                <div class="p-3" style="height: 100px; background: ${theme.gradient}; border-radius: 12px 12px 0 0; display: flex; align-items: center; justify-content: center;">
+                    <span style="color: white; font-weight: 700;">${theme.name}</span>
+                </div>
+                <div class="p-3">
+                    <h5>${theme.name}</h5>
+                    <p class="small text-muted">${theme.description}</p>
+                    ${isActive 
+                        ? '<span class="badge bg-success">Активная тема</span>' 
+                        : '<button onclick="activateTheme(\'' + theme.id + '\')" class="btn btn-outline-primary w-100">Применить</button>'
+                    }
+                </div>
+            </div>`;
+        grid.appendChild(col);
+    });
+}
+
+async function activateTheme(themeId) {
+    if (!confirm('Применить тему?')) return;
+    try {
+        const data = await apiRequest('/themes/active', {
+            method: 'PATCH',
+            body: JSON.stringify({ active_theme: themeId })
+        });
+        activeThemeId = data.active_theme;
+        renderThemes();
+        showAlert('success', 'Тема успешно применена! Перезагрузка...');
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    } catch (err) {
+        showAlert('danger', err.message || 'Ошибка применения темы');
+    }
+}
+
+function showAlert(type, msg) {
+    const el = document.getElementById('themeAlert');
+    el.className = 'alert alert-' + type + ' mt-3';
+    el.innerHTML = msg + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    el.classList.remove('d-none');
+}
+
+document.addEventListener('DOMContentLoaded', loadThemes);
+</script>
+{% endblock %}

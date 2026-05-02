@@ -1,0 +1,110 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ 'Редактировать' if is_edit else 'Новая' }} памятка{% endblock %}
+
+{% block admin_content %}
+<div class="admin-header d-flex justify-content-between align-items-center">
+    <h2>{{ title }}</h2>
+    <a href="/admin/memos" class="btn btn-outline-secondary">← Назад к списку</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form id="memoForm">
+            <div class="form-group">
+                <label for="title">Название блока *</label>
+                <input type="text" class="form-control" id="title" name="title" required maxlength="200" placeholder="Например: Общие правила безопасности">
+            </div>
+
+            <div class="form-group">
+                <label for="content">Текст памятки *</label>
+                <textarea class="form-control" id="content" name="content" rows="10" required placeholder="Введите правила, каждое с новой строки..."></textarea>
+                <small class="form-text text-muted">Каждый пункт с новой строки. Переносы сохранятся на сайте.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="order">Порядок отображения</label>
+                <input type="number" class="form-control" id="order" name="order" value="0" min="0">
+                <small class="form-text text-muted">Меньшее число = выше в списке</small>
+            </div>
+
+            <div id="formError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="formSuccess" class="alert alert-success d-none" role="alert">Сохранено! Перенаправление...</div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="/admin/memos" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('memoForm');
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const itemId = {{ item_id if is_edit else 'null' }};
+
+if (isEdit && itemId) loadMemoData(itemId);
+
+async function loadMemoData(id) {
+    try {
+        const data = await apiRequest(`/api/safety/memos/${id}`);
+        document.getElementById('title').value = data.title || '';
+        document.getElementById('content').value = data.content || '';
+        document.getElementById('order').value = data.order ?? 0;
+    } catch (err) {
+        document.getElementById('formError').textContent = 'Ошибка загрузки: ' + err.message;
+        document.getElementById('formError').classList.remove('d-none');
+    }
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    
+    errorDiv.classList.add('d-none');
+    successDiv.classList.add('d-none');
+
+    const data = {
+        title: document.getElementById('title').value.trim(),
+        content: document.getElementById('content').value.trim(),
+        order: parseInt(document.getElementById('order').value) || 0
+    };
+
+    if (!data.title || !data.content) {
+        errorDiv.textContent = 'Заполните обязательные поля';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+
+    try {
+        const url = isEdit ? `/api/safety/memos/${itemId}` : '/api/safety/memos/';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+            method: method,
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getCookie('access_token')}`
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Ошибка сохранения');
+        }
+        
+        successDiv.classList.remove('d-none');
+        setTimeout(() => window.location.href = '/admin/memos', 1500);
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %}

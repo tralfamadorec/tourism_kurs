@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Памятки по безопасности{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="section-header text-center py-4 bg-light rounded mb-5">
+        <h1>Памятки по безопасности</h1>
+        <p class="text-muted">Важная информация для вашей безопасности</p>
+    </div>
+
+    <div id="memosContainer" class="row g-4">
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Загрузка памяток...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('memosContainer');
+
+    async function loadMemos() {
+        try {
+            const response = await fetch('/api/safety/memos/');
+            if (!response.ok) throw new Error('Ошибка загрузки');
+            const memos = await response.json();
+
+            container.innerHTML = '';
+
+            if (memos.length === 0) {
+                container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Памятки пока не добавлены</p></div>';
+                return;
+            }
+
+            memos.forEach(memo => {
+                const col = document.createElement('div');
+                col.className = 'col-lg-6';
+                col.innerHTML = `
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">${memo.title}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div style="white-space: pre-line; line-height: 1.6;">${memo.content}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+        } catch (err) {
+            container.innerHTML = `<div class="col-12 text-center py-5"><p class="text-danger">Не удалось загрузить памятки: ${err.message}</p></div>`;
+        }
+    }
+
+    loadMemos();
+});
+</script>
+{% endblock %}

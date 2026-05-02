@@ -1,0 +1,93 @@
+[data-theme="feb23"] {
+    --gradient-header: linear-gradient(135deg, rgb(27, 94, 32) 0%, rgb(211, 47, 47) 100%);
+    --gradient-primary: linear-gradient(135deg, #1b5e20 0%, #d32f2f 100%);
+    --gradient-btn-hover: linear-gradient(135deg, #2e7d32 0%, #c62828 100%);
+    --gradient-card-top: linear-gradient(135deg, #388e3c 0%, #e53935 100%);
+    
+    --color-primary: #d32f2f;
+    --color-primary-hover: #b71c1c;
+    --color-accent: #ffb300;
+    --color-accent-hover: #ffd54f;
+    --color-success: #2e7d32;
+
+    --hero-overlay-color-1: rgba(27, 94, 32, 0.4);
+    --hero-overlay-color-2: rgba(211, 47, 47, 0.4);
+    --hero-blur: 2px; 
+}
+
+[data-theme="feb23"] .object-card-badge,
+[data-theme="feb23"] .event-card-date-badge,
+[data-theme="feb23"] .food-card-rating-badge,
+[data-theme="feb23"] .inclusive-card-type-badge {
+    background: linear-gradient(135deg, #d32f2f 0%, #ffb300 100%) !important;
+    color: #fff !important;
+    border: 1px solid #b71c1c !important;
+}
+
+[data-theme="feb23"] .btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+[data-theme="feb23"] .btn-primary:hover {
+    background: var(--gradient-btn-hover);
+    border-color: var(--color-accent-hover);
+}
+
+[data-theme="feb23"] .card:hover,
+[data-theme="feb23"] .object-card:hover {
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 4px 14px rgba(211, 47, 47, 0.3);
+}
+
+[data-theme="feb23"] .celebration-toggle {
+    border-color: var(--color-accent);
+    background: rgba(255, 255, 255, 0.95);
+}
+[data-theme="feb23"] .celebration-toggle:hover {
+    border-color: var(--color-accent-hover);
+    background: #fff;
+}
+[data-theme="feb23"] .celebration-toggle i {
+    color: var(--color-primary);
+}
+
+.feb23-star-rise {
+    position: fixed;
+    bottom: -50px;
+    width: 24px;
+    height: 24px;
+    pointer-events: none;
+    z-index: 9990;
+    opacity: 0.9;
+    animation: riseUp linear forwards;
+}
+
+.feb23-star-rise svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+@keyframes riseUp {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(-120vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+body.bvi-active .feb23-star-rise,
+body.bvi-active .celebration-toggle {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .feb23-star-rise {
+        width: 20px;
+        height: 20px;
+    }
+}
